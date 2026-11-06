@@ -41,24 +41,24 @@
 2. Download the latest `Jasmine-<version>.jar` from [Releases](https://github.com/marioatwired/Jasmine/releases/latest).
 3. Generate a default configuration:
    ```bash
-   java -jar Jasmine-0.1.0.jar generate-config
+   java -jar Jasmine-0.1.1.jar generate-config
    ```
 4. Edit `config.txt` and set at least `discord.token` and `discord.owner`.
 5. Start the bot:
    ```bash
-   java -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar Jasmine-0.1.0.jar
+   java -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar Jasmine-0.1.1.jar
    ```
 
 On headless servers, add `-Dnogui=true`:
 
 ```bash
-java -Dfile.encoding=UTF-8 -Dnogui=true --enable-native-access=ALL-UNNAMED -jar Jasmine-0.1.0.jar
+java -Dfile.encoding=UTF-8 -Dnogui=true --enable-native-access=ALL-UNNAMED -jar Jasmine-0.1.1.jar
 ```
 
 On Windows PowerShell, quote the JVM options:
 
 ```powershell
-java "-Dfile.encoding=UTF-8" "-Dnogui=true" "--enable-native-access=ALL-UNNAMED" "-jar" ".\Jasmine-0.1.0.jar"
+java "-Dfile.encoding=UTF-8" "-Dnogui=true" "--enable-native-access=ALL-UNNAMED" "-jar" ".\Jasmine-0.1.1.jar"
 ```
 
 The first run uses the default prefix `@mention`. You can change it in `config.txt` under `commands.prefix` or with the `/prefix` command.
@@ -112,7 +112,7 @@ Requirements: JDK 25 and Maven 3.8+.
 ```bash
 ./mvnw clean verify
 ./mvnw package
-java -Dnogui=true --enable-native-access=ALL-UNNAMED -jar target/jasmine-0.1.0-All.jar
+java -Dnogui=true --enable-native-access=ALL-UNNAMED -jar target/jasmine-0.1.1-All.jar
 ```
 
 On Windows, use `mvnw.cmd` instead of `./mvnw`.

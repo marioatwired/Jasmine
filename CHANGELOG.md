@@ -5,6 +5,21 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-11-06
+
+### Changed
+
+- Updated JDA to 6.7.0, Logback to 1.6.6, Jackson to 2.22.4, jsoup to 1.24.1,
+  Mockito to 5.24.0, MockWebServer to 5.5.1, and FlatLaf to 3.7.2.
+- Updated JUnit to 6.1.3, JetBrains annotations to 26.1.0, and org.json to
+  20260814.
+- Updated Maven plugins and the Maven Wrapper distribution to 3.10.0.
+- Updated GitHub Actions to Node 24-compatible major versions.
+
+### Fixed
+
+- Removed the stale `commands.aliases.lyrics` entry from the default config.
+
 ## [0.1.0] - 2026-11-06
 
 First Jasmine release.
