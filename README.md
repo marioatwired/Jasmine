@@ -110,18 +110,20 @@ See [docs/CONFIG.md](docs/CONFIG.md) for the main sections:
 Requirements: JDK 25 and Maven 3.8+.
 
 ```bash
-mvn clean verify
-mvn package
+./mvnw clean verify
+./mvnw package
 java -Dnogui=true --enable-native-access=ALL-UNNAMED -jar target/jasmine-0.1.0-All.jar
 ```
+
+On Windows, use `mvnw.cmd` instead of `./mvnw`.
 
 Useful commands:
 
 ```bash
-mvn test                 # unit tests
-mvn verify               # unit + integration tests
-mvn package -Pdocker     # shaded JAR without non-Linux natives
-mvn -Pcoverage verify    # tests + JaCoCo reports
+./mvnw test                 # unit tests
+./mvnw verify               # unit + integration tests
+./mvnw package -Pdocker     # shaded JAR without non-Linux natives
+./mvnw -Pcoverage verify    # tests + JaCoCo reports
 ```
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the project layout, coding conventions, and release process. The architecture is described in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

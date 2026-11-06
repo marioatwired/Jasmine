@@ -176,5 +176,5 @@ docker build -t jasmine:local .
 docker run --rm -it -v "$(pwd)/data:/musicbot" jasmine:local
 ```
 
-The Docker build uses the `docker` Maven profile and only ships the Linux
-`amd64`/`arm64` native libraries. The runtime image is multi-arch.
+The Docker build uses the `docker` Maven profile, which excludes the Windows and
+macOS JDave/udpqueue native libraries. The runtime image is multi-arch.
