@@ -12,7 +12,12 @@ Presentation
         +---------+---------+-----------------+
                   |
 Business logic
-  MusicService  SearchService  MusicCommandValidator
+  MusicService (facade)
+    -> PlayerService          playback control and queue operations
+    -> PlaylistService        saved playlists, drafts, favorites, previews
+    -> HistoryService         history queries and history-to-queue operations
+    -> NowPlayingService      now-playing and queue view data
+  SearchService  MusicCommandValidator
                   |
 Infrastructure
   audio (PlayerManager, AudioHandler, queues, monitors)
@@ -40,7 +45,7 @@ response is a text message or a slash-command reply.
 | `listener` | JDA listeners for voice state, now-playing cleanup, playback buttons, queue/history/playlist/settings interactions, and startup lifecycle. |
 | `playlist` | Playlist parsing and storage. |
 | `queue` | `AbstractQueue`, `LinearQueue`, `FairQueue`, `PlaybackHistory`. |
-| `service` | `MusicService`, `SearchService`, and audio load result handlers. |
+| `service` | `MusicService` facade; `PlayerService`, `PlaylistService`, `HistoryService`, `NowPlayingService`; `SearchService`; audio load result handlers. |
 | `settings` | Per-guild settings and JSON persistence. |
 | `utils` | Formatting, proxy, YouTube OAuth, console redirection, instance lock. |
 
@@ -74,7 +79,8 @@ ready. Audio sources are registered only when enabled in `playback.audioSources`
 
 ```text
 User command / slash command
-  -> MusicService
+  -> MusicService (facade)
+  -> PlayerService
   -> PlayerManager.loadItemOrdered()
   -> Lavaplayer source manager
   -> AudioLoadResultHandlers
@@ -95,6 +101,22 @@ updates, repeat modes, and history.
 
 `PlaybackHistory` stores previous tracks for the `previous` and `history`
 commands.
+
+## Service decomposition
+
+`MusicService` is a thin facade kept for command/listener compatibility. It
+owns the shared DTOs and delegates to four focused services:
+
+- `PlayerService`: playback control, queue mutation, volume, repeat, seek, skip,
+  shuffle, stop, pause, and track-add helpers.
+- `PlaylistService`: saved playlist reads/writes, playlist drafts, favorites,
+  playlist previews, and history-to-playlist export.
+- `HistoryService`: history view data plus queue/play operations from history.
+- `NowPlayingService`: now-playing and queue view data formatting.
+
+`PlaylistService` and `HistoryService` call back through the `MusicService`
+facade for shared queue behavior. This keeps the public command-facing API stable
+while the implementation is split.
 
 ## Commands
 
@@ -154,15 +176,15 @@ Runtime files are ignored by git.
 - Integration tests: `src/test/java/.../integration`.
 - Shared builders and fixtures: `src/test/java/.../testutil`.
 
-`MusicServiceTest` covers playback, queue, history, playlist, volume, repeat,
-shuffle, skip, stop, and pause behavior. Config tests cover legacy migration,
-rendering, diagnostics, validation, and file updates. Listener tests use Mockito
-and the fixtures under `testutil`.
+`MusicServiceTest` exercises the facade and the extracted playback, queue,
+history, playlist, volume, repeat, shuffle, skip, stop, and pause behavior.
+Config tests cover legacy migration, rendering, diagnostics, validation, and
+file updates. Listener tests use Mockito and the fixtures under `testutil`.
 
 ## Known technical debt
 
-- `MusicService` centralizes playback, queue, history, playlist, and display
-  operations. It should be split into smaller services.
+- `PlayerService` and `PlaylistService` are still relatively large; further
+  extraction is possible once their use cases stabilize.
 - `PlaylistLoader` and `PlaylistsInteractionListener` are large and mix storage,
   parsing, and UI state.
 - The v1 and v2 command layers duplicate some presentation logic.
