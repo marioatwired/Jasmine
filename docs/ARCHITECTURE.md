@@ -1,495 +1,175 @@
-# JMusicBot Architectural Analysis
+# Architecture
 
-> **Document Metadata**
-> | Field | Value |
-> |-------|-------|
-> | Generated | 2026-01-25 |
-> | Branch | `slash-commands-v1` |
-> | Commit | `c0f0a21` ([c0f0a214a50121a5b66ba28917a57013d9cb6a5f](https://github.com/arif-banai/MusicBot/commit/c0f0a214a50121a5b66ba28917a57013d9cb6a5f)) |
-> | Version | `v0.6.1-21-gc0f0a21` (0.6.2-slash-commands) |
-> | Base Commit Message | "Refactor music service and command structure" |
+Jasmine is a single-module Java 25 application. It uses JDA for Discord, Lavaplayer
+for audio, HOCON for configuration, and Swing for the desktop GUI.
 
----
+## Layers
 
-## Executive Summary
-
-JMusicBot is a cross-platform Discord music bot built with Java 25, using JDA (Java Discord API) for Discord integration and Lavaplayer for audio streaming. The codebase follows a **layered architecture** with clear separation between presentation (commands), business logic (services), and infrastructure (audio/settings).
-
----
-
-## High-Level Architecture Diagram
-
-```mermaid
-flowchart TB
-    subgraph presentation [Presentation Layer]
-        TextCmd[Text Commands v1]
-        SlashCmd[Slash Commands v2]
-        GUI[GUI Panel]
-    end
-
-    subgraph business [Business Logic Layer]
-        MusicSvc[MusicService]
-        SearchSvc[SearchService]
-        Validator[MusicCommandValidator]
-    end
-
-    subgraph infrastructure [Infrastructure Layer]
-        subgraph audio [Audio Subsystem]
-            PlayerMgr[PlayerManager]
-            AudioHandler[AudioHandler]
-            AudioSrc[AudioSource Managers]
-        end
-        subgraph persistence [Persistence]
-            SettingsMgr[SettingsManager]
-            PlaylistLoader[PlaylistLoader]
-            ConfigLoader[ConfigLoader]
-        end
-        subgraph queue [Queue System]
-            AbstractQueue[AbstractQueue]
-            LinearQueue[LinearQueue]
-            FairQueue[FairQueue]
-        end
-    end
-
-    subgraph external [External Dependencies]
-        JDA[JDA Discord API]
-        Lavaplayer[Lavaplayer]
-        YouTube[YouTube/SoundCloud/etc]
-        Discord[Discord Gateway]
-    end
-
-    TextCmd --> Validator
-    SlashCmd --> Validator
-    Validator --> MusicSvc
-    Validator --> SearchSvc
-    
-    MusicSvc --> AudioHandler
-    SearchSvc --> PlayerMgr
-    
-    AudioHandler --> AbstractQueue
-    AbstractQueue --> LinearQueue
-    AbstractQueue --> FairQueue
-    
-    AudioHandler --> PlayerMgr
-    PlayerMgr --> AudioSrc
-    AudioSrc --> Lavaplayer
-    
-    AudioHandler --> JDA
-    JDA --> Discord
-    Lavaplayer --> YouTube
-    
-    MusicSvc --> SettingsMgr
-    GUI --> MusicSvc
+```text
+Presentation
+  commands.v1 (text)  commands.v2 (slash)  gui
+        |                   |                 |
+        +---------+---------+-----------------+
+                  |
+Business logic
+  MusicService  SearchService  MusicCommandValidator
+                  |
+Infrastructure
+  audio (PlayerManager, AudioHandler, queues, monitors)
+  config (loader, migration, validation, render)
+  playlist  settings  listener  utils
 ```
 
----
+Commands and GUI call the same services. Services talk to `AudioHandler` and the
+per-guild `Settings`; they do not depend on JDA command types directly. The
+`OutputAdapter` abstraction keeps a service call independent of whether the
+response is a text message or a slash-command reply.
 
-## Package Overview
+## Packages
 
-### 1. Root Package: `com.jagrosh.jmusicbot`
+| Package | Responsibility |
+|---|---|
+| `Jasmine`, `Bot`, `BotConfig`, `DiscordService` | Startup, composition root, JDA setup. |
+| `audio` | `PlayerManager`, `AudioHandler`, queue glue, now-playing, alone-in-voice, health/metrics monitors. |
+| `commands` | Shared validation, slash-command registry, output adapters. |
+| `commands.v1` | Classic prefix commands. |
+| `commands.v2` | Slash commands and component interactions. |
+| `config` | HOCON loading, versioned migrations, diagnostics, rendering, file updates. |
+| `entities` | `Prompt`, `UserInteraction`, and small shared types. |
+| `gui` | Main window, console, settings, status, performance, timeline, and source-health panels. |
+| `listener` | JDA listeners for voice state, now-playing cleanup, playback buttons, queue/history/playlist/settings interactions, and startup lifecycle. |
+| `playlist` | Playlist parsing and storage. |
+| `queue` | `AbstractQueue`, `LinearQueue`, `FairQueue`, `PlaybackHistory`. |
+| `service` | `MusicService`, `SearchService`, and audio load result handlers. |
+| `settings` | Per-guild settings and JSON persistence. |
+| `utils` | Formatting, proxy, YouTube OAuth, console redirection, instance lock. |
 
-| Class | Role |
-|-------|------|
-| `JMusicBot` | Application entry point, bootstraps all components |
-| `Bot` | Central container holding references to all subsystems |
-| `BotConfig` | Configuration loading and access facade |
-| `DiscordService` | JDA initialization and Discord connection setup |
-| `Listener` | Discord event handler (ready, voice updates, buttons) |
+## Startup
 
-### 2. Commands Package: `commands.v1` and `commands.v2`
-
-**Purpose**: Presentation layer handling user input via text commands (v1) or slash commands (v2).
-
-**Hierarchy**:
-```
-Command (JDA-Utils)              SlashCommand (JDA-Utils)
-    ├── MusicCommand                 ├── MusicSlashCommand
-    │   └── DJCommand                │   └── DJSlashCommand
-    ├── AdminCommand                 └── AdminSlashCommand
-    └── OwnerCommand
-```
-
-**Key Classes**:
-- `MusicCommand` / `MusicSlashCommand`: Base for music playback commands
-- `DJCommand` / `DJSlashCommand`: Requires DJ role or permissions
-- `AdminCommand` / `AdminSlashCommand`: Requires MANAGE_SERVER
-- `CommandFactory`: Creates and registers all commands
-- `SlashCommandRegistry`: Handles Discord slash command upsert with hash-based change detection
-
-**Adapters**: `TextOutputAdapters` and `SlashOutputAdapters` implement `OutputAdapter` interface for command-agnostic responses.
-
-### 3. Service Package: `service`
-
-**Purpose**: Business logic layer encapsulating music operations.
-
-| Service | Responsibilities |
-|---------|------------------|
-| `MusicService` | Player control, queue management, volume, repeat, seek, skip |
-| `SearchService` | Track/playlist search with callback handling |
-| `AudioLoadResultHandlers` | Async handlers for Lavaplayer load results |
-
-**Key Design**: Services accept `OutputAdapter` to remain command-type agnostic.
-
-### 4. Audio Package: `audio`
-
-**Purpose**: Audio playback and Discord voice integration.
-
-| Class | Role |
-|-------|------|
-| `PlayerManager` | Extends Lavaplayer's `DefaultAudioPlayerManager`, registers sources |
-| `AudioHandler` | Per-guild audio handler, implements JDA's `AudioSendHandler` |
-| `AudioSource` | Enum of audio sources (YouTube, SoundCloud, etc.) with registration logic |
-| `QueuedTrack` | Wraps `AudioTrack` with request metadata |
-| `RequestMetadata` | Stores requester info (user, channel, query) |
-| `NowPlayingHandler` | Manages "now playing" message updates |
-| `AloneInVoiceHandler` | Auto-disconnect when alone in voice channel |
-| `TransformativeAudioSourceManager` | URL transformation via regex/CSS selectors |
-
-### 5. Queue Package: `queue`
-
-**Purpose**: Pluggable queue implementations.
-
-```mermaid
-classDiagram
-    class Queueable {
-        <<interface>>
-        +getIdentifier() long
-    }
-    
-    class AbstractQueue~T~ {
-        <<abstract>>
-        -list: List~T~
-        -history: PlaybackHistory~T~
-        +add(T item)* int
-        +pull() T
-        +shuffle(int startIndex)
-        +moveItem(int from, int to)
-    }
-    
-    class LinearQueue~T~ {
-        +add(T item) int
-    }
-    
-    class FairQueue~T~ {
-        +add(T item) int
-    }
-    
-    class PlaybackHistory~T~ {
-        -history: ArrayDeque~T~
-        -maxSize: int
-        +add(T item)
-        +removeFirst() T
-    }
-    
-    class QueuedTrack {
-        -track: AudioTrack
-        -metadata: RequestMetadata
-        +getIdentifier() long
-    }
-    
-    Queueable <|.. QueuedTrack
-    AbstractQueue <|-- LinearQueue
-    AbstractQueue <|-- FairQueue
-    AbstractQueue o-- PlaybackHistory
-    AbstractQueue o-- Queueable
-```
-
-**Strategy Pattern**: `QueueType` enum holds `QueueSupplier` references for runtime strategy selection.
-
-### 6. Settings Package: `settings`
-
-**Purpose**: Per-guild configuration persistence.
-
-| Class | Role |
-|-------|------|
-| `Settings` | Per-guild settings POJO (volume, repeat, queue type, prefix, etc.) |
-| `SettingsManager` | CRUD operations, JSON persistence (`serversettings.json`) |
-| `QueueType` | Enum: LINEAR, FAIR with queue factory |
-| `RepeatMode` | Enum: OFF, ALL, SINGLE |
-
-**Persistence**: Jackson JSON serialization, auto-save on mutation.
-
-### 7. Config Package: `config`
-
-**Purpose**: Application configuration with versioned migration support.
-
-| Subpackage | Responsibility |
-|------------|----------------|
-| `loader` | Loads and merges configs |
-| `io` | File I/O operations |
-| `migration` | Version migrations (0→1→...) |
-| `model` | `ConfigOption` enum with type-safe accessors |
-| `diagnostics` | Detects missing/deprecated keys |
-| `validation` | Validates required fields (token, owner) |
-| `render` | Generates updated config preserving template |
-| `update` | Manages config file updates with backups |
-
----
-
-## UML Class Diagram: Core Classes
-
-```mermaid
-classDiagram
-    class Bot {
-        -jda: JDA
-        -config: BotConfig
-        -settingsManager: SettingsManager
-        -playerManager: PlayerManager
-        -musicService: MusicService
-        -searchService: SearchService
-        +shutdown()
-    }
-    
-    class MusicService {
-        -bot: Bot
-        +play(Guild, Member, String, TextChannel, OutputAdapter)
-        +skip(Guild, Member, OutputAdapter)
-        +pause(Guild, Member, OutputAdapter)
-        +stop(Guild, Member, OutputAdapter)
-        +setVolume(Guild, int)
-        +addTrackToQueue(Guild, Member, AudioTrack, String, TextChannel)
-    }
-    
-    class AudioHandler {
-        -audioPlayer: AudioPlayer
-        -queue: AbstractQueue
-        -manager: PlayerManager
-        +addTrack(QueuedTrack)
-        +addTrackToFront(QueuedTrack)
-        +stopAndClear()
-        +provide20MsAudio() ByteBuffer
-    }
-    
-    class PlayerManager {
-        -bot: Bot
-        +init()
-        +setUpHandler(Guild) AudioHandler
-        +loadItemOrdered(Object, String, AudioLoadResultHandler)
-    }
-    
-    class MusicCommand {
-        <<abstract>>
-        #musicService: MusicService
-        #bot: Bot
-        +execute(CommandEvent)
-        #doCommand(CommandEvent)*
-    }
-    
-    class MusicSlashCommand {
-        <<abstract>>
-        #musicService: MusicService
-        #bot: Bot
-        +execute(SlashCommandEvent)
-        #doCommand(SlashCommandEvent)*
-    }
-    
-    class OutputAdapter {
-        <<interface>>
-        +reply(String)
-        +replyWarning(String)
-        +replyError(String)
-        +replySuccess(String)
-    }
-    
-    Bot --> MusicService
-    Bot --> PlayerManager
-    Bot --> SettingsManager
-    MusicService --> AudioHandler
-    MusicService --> OutputAdapter
-    AudioHandler --> PlayerManager
-    MusicCommand --> MusicService
-    MusicSlashCommand --> MusicService
-```
-
----
-
-## Design Patterns Identified
-
-| Pattern | Location | Purpose |
-|---------|----------|---------|
-| **Strategy** | `QueueType` + `AbstractQueue` | Pluggable queue algorithms (Linear/Fair) |
-| **Template Method** | `MusicCommand.execute()` → `doCommand()` | Common validation, subclass-specific logic |
-| **Adapter** | `OutputAdapter` implementations | Unified output interface for text/slash commands |
-| **Factory** | `CommandFactory`, `QueueSupplier` | Object creation encapsulation |
-| **Observer** | `AudioEventAdapter` in `AudioHandler` | React to Lavaplayer track events |
-| **Singleton-like** | `Bot`, `SettingsManager` | Single instance per application |
-| **Registry** | `ConfigMigration`, `SlashCommandRegistry` | Centralized registration |
-| **Facade** | `BotConfig`, `MusicService` | Simplified interface to complex subsystems |
-| **Command** | JDA-Utils command framework | Encapsulated user requests |
-| **Builder** | JDA's message builders | Fluent message construction |
-
----
-
-## Data Flow: Playing a Track
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant SlashCmd as PlaySlashCmd
-    participant Validator as MusicCommandValidator
-    participant MusicSvc as MusicService
-    participant PlayerMgr as PlayerManager
-    participant AudioSrc as AudioSourceManager
-    participant Handler as AudioHandler
-    participant JDA
-    participant Discord
-
-    User->>SlashCmd: /play "song name"
-    SlashCmd->>Validator: validate(event)
-    Validator-->>SlashCmd: valid
-    SlashCmd->>MusicSvc: play(guild, member, query, channel, adapter)
-    MusicSvc->>PlayerMgr: loadItemOrdered(guild, query, handler)
-    PlayerMgr->>AudioSrc: loadItem(query)
-    AudioSrc-->>PlayerMgr: AudioTrack
-    PlayerMgr-->>MusicSvc: trackLoaded callback
-    MusicSvc->>Handler: addTrack(QueuedTrack)
-    Handler->>Handler: audioPlayer.playTrack()
-    loop Every 20ms
-        JDA->>Handler: provide20MsAudio()
-        Handler-->>JDA: ByteBuffer (Opus)
-        JDA->>Discord: Send audio packet
-    end
-    MusicSvc-->>SlashCmd: success message
-    SlashCmd-->>User: "Added song to queue"
-```
-
----
-
-## Implicit Architectural Decisions
-
-### 1. Layered Architecture
-- **Presentation**: Commands (v1/v2) handle user input
-- **Business Logic**: Services contain domain operations
-- **Infrastructure**: Audio, persistence, Discord integration
-
-### 2. Command Version Separation
-- `v1` = Text commands (legacy, prefix-based)
-- `v2` = Slash commands (modern Discord UI)
-- Both share `MusicService` and `OutputAdapter` abstraction
-
-### 3. Per-Guild Isolation
-- Each guild has its own `AudioHandler`, `Settings`, and queue
-- No cross-guild state leakage
-
-### 4. Configuration Versioning
-- `meta.configVersion` enables forward-compatible migrations
-- Backups created before updates
-
-### 5. Event-Driven Audio
-- Lavaplayer events drive track lifecycle
-- `AudioHandler` extends `AudioEventAdapter` for hooks
-
-### 6. Deferred Initialization
-- `PlayerManager.init()` called after GUI to ensure logging is ready
-- Audio sources registered at runtime based on config
-
----
-
-## Improvement Opportunities
-
-### 1. Reduce Service Coupling
-**Issue**: `MusicService` (1192 lines) has too many responsibilities.
-**Solution**: Extract sub-services:
-- `QueueService` for queue operations
-- `PlayerControlService` for play/pause/stop/seek
-- `VolumeService` for volume management
-
-### 2. Complete v2 Command Migration
-**Issue**: v2 (slash commands) lacks Owner and General command categories.
-**Solution**: Migrate remaining commands to slash versions for consistent UX.
-
-### 3. Standardize Result Objects
-**Issue**: Some methods return raw values, others return result objects.
-**Solution**: Consistently use result objects (e.g., `OperationResult<T>`) for all service methods.
-
-### 4. Extract Audio Source Registration
-**Issue**: `AudioSource` enum contains complex registration logic.
-**Solution**: Use a dedicated `AudioSourceRegistry` class with pluggable source providers.
-
-### 5. Add Dependency Injection Framework
-**Issue**: Manual dependency wiring in `Bot` constructor.
-**Solution**: Consider lightweight DI (Guice, Dagger) for cleaner component management and testing.
-
-### 6. Improve Test Coverage
-**Issue**: Limited unit test infrastructure.
-**Solution**: Add mocking for Discord/audio layers, increase coverage of service layer.
-
-### 7. Configuration Hot-Reload
-**Issue**: Config changes require restart.
-**Solution**: Add file watcher for hot-reloading non-critical settings.
-
-### 8. Unified Error Handling
-**Issue**: Error handling varies across commands.
-**Solution**: Create `CommandException` hierarchy with consistent handling in base classes.
-
----
-
-## Technology Stack
-
-| Component | Technology |
-|-----------|------------|
-| Language | Java 25 |
-| Build | Maven 3.8+ |
-| Discord API | JDA 6.3.0 |
-| Command Framework | JDA-Chewtils 2.2.1 |
-| Audio Playback | Lavaplayer 2.2.6 |
-| YouTube Support | Lavalink YouTube Source 1.16.0 |
-| Voice Protocol | JDave (DAVE protocol) |
-| Native Audio | udpqueue (UDP audio queuing) |
-| Configuration | Typesafe Config (HOCON) |
-| Persistence | Jackson JSON |
-| Logging | Logback + SLF4J |
-| HTML Parsing | JSoup |
-| Testing | JUnit 5, Mockito, Hamcrest |
-
----
-
-## Startup Flow
-
-```
+```text
 main()
-  └─> startBot()
-       ├─> Create UserInteraction (Prompt)
-       ├─> Redirect console streams (if GUI)
-       ├─> Acquire instance lock
-       ├─> Check versions
-       ├─> Load BotConfig
-       │    └─> Validate token & owner
-       ├─> Set log level
-       ├─> Create EventWaiter
-       ├─> Create SettingsManager
-       ├─> Create Bot instance
-       │    ├─> Initialize PlaylistLoader
-       │    ├─> Initialize PlayerManager (not init() yet)
-       │    ├─> Initialize NowPlayingHandler
-       │    ├─> Initialize AloneInVoiceHandler
-       │    ├─> Initialize MusicService
-       │    ├─> Initialize SearchService
-       │    └─> Initialize YoutubeOauth2TokenHandler
-       ├─> Initialize GUI (if enabled)
-       ├─> Create CommandClient (via CommandFactory)
-       ├─> Initialize PlayerManager (register audio sources)
-       └─> Create JDA & connect to Discord
-            └─> Register Listener for events
+  -> Prompt / GUI decision
+  -> InstanceLock
+  -> version/Java checks
+  -> BotConfig.load()          (reference.conf + config.txt + migrations)
+  -> SettingsManager
+  -> Bot
+       -> PlaylistLoader
+       -> PlayerManager
+       -> NowPlayingHandler
+       -> AloneInVoiceHandler
+       -> MusicService
+       -> SearchService
+       -> YoutubeOauth2TokenHandler
+  -> GUI (optional)
+  -> CommandFactory / SlashCommandRegistry
+  -> PlayerManager.init()      (register enabled audio sources)
+  -> DiscordService.createJDA()
 ```
 
----
+`PlayerManager.init()` is intentionally delayed until logging and the GUI are
+ready. Audio sources are registered only when enabled in `playback.audioSources`.
 
- ## Document History
+## Audio flow
 
-This architectural analysis was generated using AI-assisted code analysis. To update this document after significant changes:
-
-1. Review the current codebase structure for new packages/classes
-2. Update diagrams to reflect new components or data flows
-3. Add new design patterns if introduced
-4. Update the metadata table at the top with the new commit info
-
-**Regeneration command** (for reference):
-```bash
-git log -1 --format="%H %h %s %ai"
-git describe --tags --always
+```text
+User command / slash command
+  -> MusicService
+  -> PlayerManager.loadItemOrdered()
+  -> Lavaplayer source manager
+  -> AudioLoadResultHandlers
+  -> AudioHandler.addTrack()
+  -> AudioPlayer.playTrack()
+  -> NativeAudioSendFactory (udpqueue)
+  -> Discord voice
 ```
 
----
+Each guild has its own `AudioHandler`, queue, and `Settings`. `AudioHandler`
+extends Lavaplayer's `AudioEventAdapter` to drive track start/end, now-playing
+updates, repeat modes, and history.
 
-*Last generated: 2026-01-25 | Commit: c0f0a21 | Branch: slash-commands-v1*
+`QueueType` selects the queue strategy:
+
+- `LINEAR`: append order.
+- `FAIR`: interleaves tracks by requester.
+
+`PlaybackHistory` stores previous tracks for the `previous` and `history`
+commands.
+
+## Commands
+
+There are two presentation layers:
+
+- `commands.v1`: JDA-Chewtils text commands, using `CommandEvent`.
+- `commands.v2`: JDA slash commands and button/select interactions.
+
+Both are registered in `CommandFactory`. Shared validation lives in
+`MusicCommandValidator`; shared responses go through `OutputAdapter`
+implementations (`TextOutputAdapters`, `SlashOutputAdapters`).
+
+`SlashCommandRegistry` computes a hash of the command definitions and only
+upserts them when they change.
+
+## Configuration
+
+`BotConfig` is the facade. Internally:
+
+1. `ConfigLoader` parses `config.txt` and `reference.conf`.
+2. `ConfigMigration` applies versioned migrations (`LegacyToV1`, `V1ToV2`).
+3. `ConfigValidator` checks the token and owner ID.
+4. `ConfigDiagnostics` reports missing, deprecated, or unknown keys.
+5. `ConfigUpdater` writes updates with `.bak` backups and preserves comments.
+
+`configVersion` lives under `meta`. Configs without it are treated as legacy
+version 0.
+
+## GUI
+
+The GUI is optional and enabled by default. `gui.enabled` and `-Dnogui=true`
+are combined in `Bot.isNoGUI()`. The GUI is intentionally kept out of the
+service layer:
+
+- `MainFrame` owns the tabs and refresh timers.
+- `ConsolePanel` receives redirected `System.out`/`System.err`.
+- `StatusPanel`, `SettingsPanel`, `ConfigPanel`, `PerformancePanel`,
+  `EnhancedTimelinePanel`, `SystemHealthPanel`, and `SourceHealthPanel` render
+  state and call services.
+
+In Docker and headless deployments, the GUI is disabled and monitoring wrappers
+fall back to no-op implementations where possible.
+
+## Persistence
+
+- `config.txt`: application configuration, HOCON.
+- `serversettings.json`: per-guild settings (Jackson).
+- `Playlists/`: playlist files.
+- `youtubetoken.txt`: optional YouTube OAuth refresh token.
+- `.jasmine.lock`: prevents two instances from using the same directory.
+
+Runtime files are ignored by git.
+
+## Testing
+
+- Unit tests: `src/test/java/.../unit`.
+- Integration tests: `src/test/java/.../integration`.
+- Shared builders and fixtures: `src/test/java/.../testutil`.
+
+`MusicServiceTest` covers playback, queue, history, playlist, volume, repeat,
+shuffle, skip, stop, and pause behavior. Config tests cover legacy migration,
+rendering, diagnostics, validation, and file updates. Listener tests use Mockito
+and the fixtures under `testutil`.
+
+## Known technical debt
+
+- `MusicService` centralizes playback, queue, history, playlist, and display
+  operations. It should be split into smaller services.
+- `PlaylistLoader` and `PlaylistsInteractionListener` are large and mix storage,
+  parsing, and UI state.
+- The v1 and v2 command layers duplicate some presentation logic.
+- Performance monitoring singletons are convenient but harder to test than
+  injected instances.
+- `MusicService` exposes several result DTOs as nested classes; some can become
+  records or move to a dedicated package.
+
+These are refactors, not behavior changes. Keep tests green while addressing
+them.

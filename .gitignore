@@ -1,10 +1,19 @@
-/nbproject/
+# Build output
 /target/
+/dependency-reduced-pom.xml
+
+# Runtime data
+/config.txt
+/serversettings.json
+/youtubetoken.txt
 /Playlists/
-/test/
-*.json
-*.txt
-nb*.xml
+/.jasmine.lock
+*.lock
+*.log
+
+# Maven wrapper
+# Keep .mvn/wrapper/maven-wrapper.properties committed.
+.mvn/wrapper/maven-wrapper.jar
 
 # IDEs
 /.idea/
@@ -12,16 +21,18 @@ nb*.xml
 /.cursor/
 *.iml
 *.iws
-
-# Maven
-dependency-reduced-pom.xml
+*.ipr
+.classpath
+.project
+.settings/
+/nbproject/
+nb*.xml
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Logs
-*.log
-
-# Other
-*.lock
+# Local environment
+.env
+.env.*

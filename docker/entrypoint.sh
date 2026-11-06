@@ -9,7 +9,7 @@ if [ ! -f "$JAR" ]; then
 fi
 
 echo "[INFO] ========================================"
-echo "[INFO] JMusicBot Containerized"
+echo "[INFO] Jasmine Containerized"
 echo "[INFO] ========================================"
 echo "[INFO] Selected jar: $JAR"
 echo "[INFO] Working directory: $(pwd)"
@@ -25,7 +25,7 @@ echo "[INFO] ========================================"
 : "${JAVA_OPTS:=-XX:+UseZGC -XX:+AlwaysPreTouch}"
 
 # Build argv
-set -- java -Dnogui=true --enable-native-access=ALL-UNNAMED
+set -- java -Dfile.encoding=UTF-8 -Dnogui=true --enable-native-access=ALL-UNNAMED
 
 # Append JAVA_OPTS (either default or user-provided)
 if [ -n "${JAVA_OPTS:-}" ]; then

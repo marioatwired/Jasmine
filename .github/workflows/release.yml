@@ -1,0 +1,178 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (must match pom.xml, e.g. 0.1.0)'
+        required: true
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: marioatwired/jasmine
+
+jobs:
+  build:
+    name: Build Release JAR
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          POM_VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\([^<]*\)<\/version>.*/\1/' | tr -d ' ')
+          if [ "$POM_VERSION" != "$VERSION" ]; then
+            echo "::error::pom.xml version ($POM_VERSION) does not match release version ($VERSION)"
+            exit 1
+          fi
+          if echo "$VERSION" | grep -q '-'; then
+            PRERELEASE=true
+          else
+            PRERELEASE=false
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "Releasing Jasmine $VERSION (prerelease: $PRERELEASE)"
+
+      - name: Build and test
+        run: |
+          COMMIT_TIME=$(git log -1 --format=%cI)
+          mvn --batch-mode verify -Pcoverage -Dproject.build.outputTimestamp="$COMMIT_TIME"
+
+      - name: Rename release JAR
+        run: mv target/*-All.jar "Jasmine-${{ steps.version.outputs.version }}.jar"
+
+      - name: Upload release JAR
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-jar
+          path: Jasmine-*.jar
+          if-no-files-found: error
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-jacoco-report
+          path: target/site/jacoco
+          if-no-files-found: ignore
+
+  docker:
+    name: Publish Release Image
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Resolve build timestamp
+        id: timestamp
+        run: echo "value=$(git log -1 --format=%cI)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ needs.build.outputs.version }}
+            type=raw,value=latest,enable=${{ needs.build.outputs.prerelease != 'true' }}
+            type=sha,format=short
+
+      - name: Build and push
+        id: build
+        uses: ./.github/actions/docker-build
+        with:
+          tags: ${{ steps.meta.outputs.tags }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          timestamp: ${{ steps.timestamp.outputs.value }}
+          registry: ${{ env.REGISTRY }}
+          image-name: ${{ env.IMAGE_NAME }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image digest
+        run: echo "Image pushed with digest ${{ steps.build.outputs.digest }}"
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download release JAR
+        uses: actions/download-artifact@v7
+        with:
+          name: release-jar
+          path: .
+
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ needs.build.outputs.version }}
+          name: Jasmine v${{ needs.build.outputs.version }}
+          commit: ${{ github.sha }}
+          draft: false
+          prerelease: ${{ needs.build.outputs.prerelease == 'true' }}
+          artifacts: 'Jasmine-*.jar'
+          body: |
+            Jasmine v${{ needs.build.outputs.version }}
+
+            ### Install
+
+            Download `Jasmine-${{ needs.build.outputs.version }}.jar` and follow the
+            [setup guide](https://github.com/marioatwired/Jasmine/blob/master/docs/SETUP.md).
+
+            Docker:
+
+            ```bash
+            docker pull ghcr.io/marioatwired/jasmine:${{ needs.build.outputs.version }}
+            ```
+
+            ### Configuration
+
+            Existing `config.txt` files are migrated automatically. See the
+            [configuration reference](https://github.com/marioatwired/Jasmine/blob/master/docs/CONFIG.md).
+
+            Full changelog: https://github.com/marioatwired/Jasmine/blob/master/CHANGELOG.md
