@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '.github/**'
+      - 'docs/**'
+      - '**/*.md'
+      - 'LICENSE'
+      - 'NOTICE'
+      - 'docker-compose.example.yml'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run tests
+        run: |
+          COMMIT_TIME=$(git log -1 --format=%cI)
+          ./mvnw --batch-mode verify -Pcoverage -Dproject.build.outputTimestamp="$COMMIT_TIME"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: jacoco-report
+          path: target/site/jacoco
+          if-no-files-found: ignore
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports
+            target/failsafe-reports
+          if-no-files-found: ignore
+
+  docker:
+    name: Publish Docker Image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: marioatwired/jasmine
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Resolve build timestamp
+        id: timestamp
+        run: echo "value=$(git log -1 --format=%cI)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build and push
+        id: build
+        uses: ./.github/actions/docker-build
+        with:
+          tags: ${{ steps.meta.outputs.tags }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          timestamp: ${{ steps.timestamp.outputs.value }}
+          registry: ${{ env.REGISTRY }}
+          image-name: ${{ env.IMAGE_NAME }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image digest
+        run: echo "Image pushed with digest ${{ steps.build.outputs.digest }}"

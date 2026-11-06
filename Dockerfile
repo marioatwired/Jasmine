@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.12
 
-# Multi-stage build for JMusicBot
+# Multi-stage build for Jasmine
 # Stage 1: Build the application
 FROM maven:3.9.12-eclipse-temurin-25-alpine AS builder
 
@@ -33,7 +33,7 @@ RUN --mount=type=cache,target=/root/.m2/repository \
 # Using noble (Ubuntu 24.04) for glibc 2.39 compatibility with native libraries
 FROM eclipse-temurin:25-jdk-noble AS jre-builder
 
-# Create a minimal JRE with only the modules JMusicBot needs
+# Create a minimal JRE with only the modules Jasmine needs
 # Modules determined by: jdeps --print-module-deps --ignore-missing-deps <jar>
 # Plus runtime-loaded modules that jdeps can't detect:
 #   java.base         - Core Java classes
@@ -63,11 +63,11 @@ RUN $JAVA_HOME/bin/jlink \
 FROM bitnami/minideb:trixie
 
 # OCI image labels for better traceability and management
-LABEL org.opencontainers.image.title="JMusicBot" \
+LABEL org.opencontainers.image.title="Jasmine" \
       org.opencontainers.image.description="A cross-platform Discord music bot with a clean interface" \
-      org.opencontainers.image.url="https://jmusicbot.com" \
-      org.opencontainers.image.source="https://github.com/arif-banai/MusicBot" \
-      org.opencontainers.image.vendor="JMusicBot" \
+      org.opencontainers.image.url="https://github.com/marioatwired/Jasmine" \
+      org.opencontainers.image.source="https://github.com/marioatwired/Jasmine" \
+      org.opencontainers.image.vendor="Jasmine" \
       org.opencontainers.image.licenses="Apache-2.0"
 
 # Copy custom JRE from jre-builder stage
@@ -76,20 +76,20 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}"
 COPY --from=jre-builder /javaruntime $JAVA_HOME
 
 # Create non-root user and application directories in single layer
-RUN groupadd --gid 10001 jmusicbot && \
-    useradd --uid 10001 --gid 10001 --shell /bin/false jmusicbot && \
+RUN groupadd --gid 10001 jasmine && \
+    useradd --uid 10001 --gid 10001 --shell /bin/false jasmine && \
     mkdir -p /app /musicbot && \
-    chown -R jmusicbot:jmusicbot /app /musicbot
+    chown -R jasmine:jasmine /app /musicbot
 
 # Copy the built JAR from builder stage
-COPY --from=builder --chown=jmusicbot:jmusicbot /build/target/JMusicBot-*-All.jar /app/app.jar
+COPY --from=builder --chown=jasmine:jasmine /build/target/jasmine-*-All.jar /app/app.jar
 
 # Copy and set permissions for entrypoint script
-COPY --chown=jmusicbot:jmusicbot --chmod=755 docker/entrypoint.sh /app/entrypoint.sh
+COPY --chown=jasmine:jasmine --chmod=755 docker/entrypoint.sh /app/entrypoint.sh
 
 WORKDIR /musicbot
 
 # Switch to non-root user for security
-USER jmusicbot
+USER jasmine
 
 ENTRYPOINT ["/app/entrypoint.sh"]

@@ -1,9 +1,11 @@
-# Build artifacts (Maven will rebuild these)
+# Build artifacts
 target/
+dependency-reduced-pom.xml
 
 # Version control
 .git/
 .gitignore
+.gitattributes
 .github/
 .circleci/
 
@@ -19,52 +21,49 @@ target/
 .project
 .settings/
 
-# Test files (not needed for build)
+# Test files (not needed in the image)
 src/test/
 
-# Documentation (not needed in image)
+# Documentation (not needed in the image)
 docs/
 README.md
 LICENSE
+NOTICE
 *.md
 
-# Docker files (not needed in image)
+# Docker files (not needed in the image)
 docker-compose*.yml
 Dockerfile
 .dockerignore
 
-# User-specific config files
+# User-specific runtime data
 config.txt
 serversettings.json
+youtubetoken.txt
 *.json
-
-# Playlists and user data
-Playlists/
-playlists/
-
-# Scripts (not needed in image, except entrypoint)
-scripts/
-*.sh
-!docker/entrypoint.sh
-
-# Maven files
-dependency-reduced-pom.xml
-.mvn/
-
-# OS files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Logs and temporary files
+*.lock
 *.log
 *.tmp
 *.bak
 *.cache
+Playlists/
+playlists/
 
 # Environment files
 .env
 .env.*
 
-# Misc
-CNAME
+# Scripts (not needed in the image, except the entrypoint)
+scripts/
+*.sh
+!docker/entrypoint.sh
+
+# Maven wrapper (the image uses its own Maven)
+.mvn/
+mvnw
+mvnw.cmd
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
