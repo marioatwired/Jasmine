@@ -134,7 +134,9 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: build
+    needs:
+      - build
+      - docker
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

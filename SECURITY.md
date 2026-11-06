@@ -12,6 +12,10 @@ Use GitHub's private vulnerability reporting:
 
 https://github.com/marioatwired/Jasmine/security/advisories/new
 
+If the form is not available, contact the maintainer directly on GitHub
+([@marioatwired](https://github.com/marioatwired)) instead of opening a public
+issue.
+
 Include:
 
 - Affected version and commit.
