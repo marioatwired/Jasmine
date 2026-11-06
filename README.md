@@ -156,7 +156,7 @@ Bug reports, feature requests, and pull requests are welcome. Please read [CONTR
 
 - Use a short-lived branch: `feature/<slug>`, `fix/<slug>`, or `chore/<slug>`.
 - Keep `master` releasable.
-- Run `mvn verify` before opening a pull request.
+- Run `./mvnw verify` before opening a pull request.
 - Use conventional commit messages when possible (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
 
 ## License and attribution
