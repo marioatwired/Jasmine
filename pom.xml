@@ -575,7 +575,7 @@
 
         <!-- BOM versions -->
         <jackson-bom.version>2.20.1</jackson-bom.version>
-        <junit-bom.version>5.14.2</junit-bom.version>
+        <junit-bom.version>6.1.3</junit-bom.version>
 
         <!-- Managed dependency versions -->
         <slf4j.version>2.0.17</slf4j.version>
