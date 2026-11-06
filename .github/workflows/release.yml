@@ -70,7 +70,7 @@ jobs:
       - name: Build and test
         run: |
           COMMIT_TIME=$(git log -1 --format=%cI)
-          mvn --batch-mode verify -Pcoverage -Dproject.build.outputTimestamp="$COMMIT_TIME"
+          ./mvnw --batch-mode verify -Pcoverage -Dproject.build.outputTimestamp="$COMMIT_TIME"
 
       - name: Rename release JAR
         run: mv target/*-All.jar "Jasmine-${{ steps.version.outputs.version }}.jar"

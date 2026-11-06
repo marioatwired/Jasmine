@@ -39,7 +39,7 @@ jobs:
       - name: Run tests
         run: |
           COMMIT_TIME=$(git log -1 --format=%cI)
-          mvn --batch-mode verify -Pcoverage -Dproject.build.outputTimestamp="$COMMIT_TIME"
+          ./mvnw --batch-mode verify -Pcoverage -Dproject.build.outputTimestamp="$COMMIT_TIME"
 
       - name: Upload coverage report
         if: always()
