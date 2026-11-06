@@ -49,7 +49,6 @@ public final class ConfigTestConstants {
     static {
         Map<String, List<String>> aliases = new HashMap<>();
         aliases.put("settings", List.of("status"));
-        aliases.put("lyrics", List.of());
         aliases.put("nowplaying", List.of("np", "current"));
         aliases.put("play", List.of());
         aliases.put("playlists", List.of("pls"));

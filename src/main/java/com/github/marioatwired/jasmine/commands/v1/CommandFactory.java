@@ -65,9 +65,6 @@ public class CommandFactory {
             .addCommands(aboutCommand,
                     new PingCommand(),
                     new SettingsCmd(bot),
-
-                    // Lyrics functionality removed - JLyrics dependency removed
-                    // new LyricsCmd(bot),
                     new NowPlayingCmd(bot),
                     new PlayCmd(bot),
                     new PlaylistsCmd(bot),
