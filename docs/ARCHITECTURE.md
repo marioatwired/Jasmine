@@ -14,7 +14,9 @@ Presentation
 Business logic
   MusicService (facade)
     -> PlayerService          playback control and queue operations
-    -> PlaylistService        saved playlists, drafts, favorites, previews
+    -> PlaylistService        saved playlists, favorites, and playlist orchestration
+    -> PlaylistDraftService   interactive playlist draft state and CRUD
+    -> PlaylistPreviewService playlist previews and paginated track views
     -> HistoryService         history queries and history-to-queue operations
     -> NowPlayingService      now-playing and queue view data
   SearchService  MusicCommandValidator
@@ -45,7 +47,7 @@ response is a text message or a slash-command reply.
 | `listener` | JDA listeners for voice state, now-playing cleanup, playback buttons, queue/history/playlist/settings interactions, and startup lifecycle. |
 | `playlist` | Playlist parsing and storage. |
 | `queue` | `AbstractQueue`, `LinearQueue`, `FairQueue`, `PlaybackHistory`. |
-| `service` | `MusicService` facade; `PlayerService`, `PlaylistService`, `HistoryService`, `NowPlayingService`; `SearchService`; audio load result handlers. |
+| `service` | `MusicService` facade; `PlayerService`, `PlaylistService`, `PlaylistDraftService`, `PlaylistPreviewService`, `HistoryService`, `NowPlayingService`; `SearchService`; audio load result handlers. |
 | `settings` | Per-guild settings and JSON persistence. |
 | `utils` | Formatting, proxy, YouTube OAuth, console redirection, instance lock. |
 
@@ -105,12 +107,15 @@ commands.
 ## Service decomposition
 
 `MusicService` is a thin facade kept for command/listener compatibility. It
-owns the shared DTOs and delegates to four focused services:
+owns the shared DTOs and delegates to focused services:
 
 - `PlayerService`: playback control, queue mutation, volume, repeat, seek, skip,
   shuffle, stop, pause, and track-add helpers.
-- `PlaylistService`: saved playlist reads/writes, playlist drafts, favorites,
-  playlist previews, and history-to-playlist export.
+- `PlaylistService`: saved playlist reads/writes, favorites, playlist queue/play
+  operations, and history-to-playlist export.
+- `PlaylistDraftService`: interactive playlist draft state, mutations, saves, and
+  discards.
+- `PlaylistPreviewService`: playlist track previews and paginated track views.
 - `HistoryService`: history view data plus queue/play operations from history.
 - `NowPlayingService`: now-playing and queue view data formatting.
 
@@ -183,8 +188,8 @@ file updates. Listener tests use Mockito and the fixtures under `testutil`.
 
 ## Known technical debt
 
-- `PlayerService` and `PlaylistService` are still relatively large; further
-  extraction is possible once their use cases stabilize.
+- `PlayerService` is still relatively large; further extraction is possible once
+  its use cases stabilize.
 - `PlaylistLoader` and `PlaylistsInteractionListener` are large and mix storage,
   parsing, and UI state.
 - The v1 and v2 command layers duplicate some presentation logic.

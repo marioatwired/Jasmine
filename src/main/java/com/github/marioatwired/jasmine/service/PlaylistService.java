@@ -43,17 +43,13 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 /**
- * Saved playlist management, playlist drafts, favorites, and playlist track previews.
+ * Saved playlist management, favorites, and playlist operation orchestration.
  */
 public class PlaylistService
 {
@@ -61,16 +57,18 @@ public class PlaylistService
     private static final Pattern WINDOWS_DRIVE_ABSOLUTE_PATH = Pattern.compile("^[A-Za-z]:[\\\\/].*");
     private static final boolean WINDOWS_RUNTIME =
             System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
-    private static final String COULD_NOT_LOAD_LINE = "`[?:??]` **Could not load**";
 
     private final Bot bot;
     private final MusicService musicService;
-    private final Map<PlaylistDraftKey, PlaylistDraftState> playlistDrafts = new ConcurrentHashMap<>();
+    private final PlaylistDraftService playlistDraftService;
+    private final PlaylistPreviewService playlistPreviewService;
 
     public PlaylistService(Bot bot, MusicService musicService)
     {
         this.bot = bot;
         this.musicService = musicService;
+        this.playlistDraftService = new PlaylistDraftService(bot);
+        this.playlistPreviewService = new PlaylistPreviewService(bot);
     }
 
     private AudioHandler getHandler(Guild guild)
@@ -141,7 +139,7 @@ public class PlaylistService
                 bot.getPlaylistLoader().appendItemIfAbsentResult(FAVORITES_PLAYLIST_NAME, favoriteEntry);
         if (!appendResult.isSuccess())
         {
-            output.replyError(mapPlaylistErrorToMessage(appendResult.getError()));
+            output.replyError(PlaylistErrorMessages.toMessage(appendResult.getError()));
             return;
         }
 
@@ -205,29 +203,12 @@ public class PlaylistService
         return WINDOWS_DRIVE_ABSOLUTE_PATH.matcher(value).matches() || value.startsWith("\\\\");
     }
 
-    private String mapPlaylistErrorToMessage(PlaylistLoader.PlaylistError error)
-    {
-        if (error == null)
-        {
-            return "Playlist storage is unavailable.";
-        }
-        String path = error.getConfiguredPath() == null ? "(not configured)" : error.getConfiguredPath();
-        return switch (error.getType())
-        {
-            case INVALID_CONFIG ->
-                    "Playlists storage is misconfigured (`" + path + "`). " + error.getMessage();
-            case STORAGE_UNAVAILABLE ->
-                    "Playlists storage is unavailable (`" + path + "`). " + error.getMessage();
-            case PLAYLIST_NOT_FOUND -> error.getMessage();
-        };
-    }
-
     public PlaylistNamesInfo getAvailablePlaylistNames()
     {
         PlaylistLoader.PlaylistResult<List<String>> result = bot.getPlaylistLoader().getPlaylistNamesResult();
         if (!result.isSuccess())
         {
-            return PlaylistNamesInfo.error(mapPlaylistErrorToMessage(result.getError()));
+            return PlaylistNamesInfo.error(PlaylistErrorMessages.toMessage(result.getError()));
         }
         return PlaylistNamesInfo.success(result.getValue());
     }
@@ -237,7 +218,7 @@ public class PlaylistService
         PlaylistLoader.PlaylistResult<Playlist> playlistResult = bot.getPlaylistLoader().getPlaylistResult(playlistName);
         if (!playlistResult.isSuccess())
         {
-            output.replyError(mapPlaylistErrorToMessage(playlistResult.getError()));
+            output.replyError(PlaylistErrorMessages.toMessage(playlistResult.getError()));
             return;
         }
         Playlist playlist = playlistResult.getValue();
@@ -290,7 +271,7 @@ public class PlaylistService
         PlaylistLoader.PlaylistResult<Playlist> playlistResult = bot.getPlaylistLoader().getPlaylistResult(playlistName);
         if (!playlistResult.isSuccess())
         {
-            output.replyError(mapPlaylistErrorToMessage(playlistResult.getError()));
+            output.replyError(PlaylistErrorMessages.toMessage(playlistResult.getError()));
             return;
         }
 
@@ -378,201 +359,78 @@ public class PlaylistService
     public PlaylistDraftContext buildPlaylistDraftContext(long guildId, long channelId, long messageId,
                                                           long userId, String playlistName)
     {
-        return new PlaylistDraftContext(guildId, channelId, messageId, userId, playlistName);
+        return playlistDraftService.buildPlaylistDraftContext(guildId, channelId, messageId, userId, playlistName);
     }
 
     public PlaylistDraftMutationResult removePlaylistDraftItem(PlaylistDraftContext context, int position)
     {
-        PlaylistDraftState state = getOrCreatePlaylistDraftState(context);
-        if (state == null)
-        {
-            return PlaylistDraftMutationResult.error("Playlist no longer exists.");
-        }
-        if (position < 1 || position > state.items.size())
-        {
-            return PlaylistDraftMutationResult.error("Position must be between 1 and " + state.items.size() + ".");
-        }
-        state.items.remove(position - 1);
-        state.dirty = true;
-        state.revision++;
-        return PlaylistDraftMutationResult.success(state.items.size(), true, state.revision);
+        return playlistDraftService.removePlaylistDraftItem(context, position);
     }
 
     public PlaylistDraftMutationResult movePlaylistDraftItem(PlaylistDraftContext context, int fromPosition, int toPosition)
     {
-        PlaylistDraftState state = getOrCreatePlaylistDraftState(context);
-        if (state == null)
-        {
-            return PlaylistDraftMutationResult.error("Playlist no longer exists.");
-        }
-        int size = state.items.size();
-        if (fromPosition < 1 || fromPosition > size || toPosition < 1 || toPosition > size)
-        {
-            return PlaylistDraftMutationResult.error("Positions must be between 1 and " + size + ".");
-        }
-        if (fromPosition == toPosition)
-        {
-            return PlaylistDraftMutationResult.success(size, state.dirty, state.revision);
-        }
-        String item = state.items.remove(fromPosition - 1);
-        state.items.add(toPosition - 1, item);
-        state.dirty = true;
-        state.revision++;
-        return PlaylistDraftMutationResult.success(state.items.size(), true, state.revision);
+        return playlistDraftService.movePlaylistDraftItem(context, fromPosition, toPosition);
     }
 
     public PlaylistDraftMutationResult savePlaylistDraft(PlaylistDraftContext context)
     {
-        PlaylistDraftState state = playlistDrafts.get(toDraftKey(context));
-        if (state == null)
-        {
-            return PlaylistDraftMutationResult.error("There are no unsaved changes.");
-        }
-        if (!state.dirty)
-        {
-            return PlaylistDraftMutationResult.error("There are no unsaved changes.");
-        }
-        String content = String.join(System.lineSeparator(), state.items);
-        PlaylistLoader.PlaylistResult<Void> writeResult = bot.getPlaylistLoader()
-                .writePlaylistResult(context.playlistName(), content);
-        if (!writeResult.isSuccess())
-        {
-            return PlaylistDraftMutationResult.error(mapPlaylistErrorToMessage(writeResult.getError()));
-        }
-        state.dirty = false;
-        state.revision++;
-        return PlaylistDraftMutationResult.success(state.items.size(), false, state.revision);
+        return playlistDraftService.savePlaylistDraft(context);
     }
 
     public void discardPlaylistDraft(PlaylistDraftContext context)
     {
-        playlistDrafts.remove(toDraftKey(context));
+        playlistDraftService.discardPlaylistDraft(context);
     }
 
     public boolean isPlaylistDraftDirty(PlaylistDraftContext context)
     {
-        PlaylistDraftState state = playlistDrafts.get(toDraftKey(context));
-        return state != null && state.dirty;
+        return playlistDraftService.isPlaylistDraftDirty(context);
     }
 
     public int getPlaylistTrackCount(PlaylistDraftContext context)
     {
-        PlaylistDraftState state = playlistDrafts.get(toDraftKey(context));
-        if (state != null)
-        {
-            return state.items.size();
-        }
-        PlaylistLoader.PlaylistResult<Playlist> playlistResult = bot.getPlaylistLoader().getPlaylistResult(context.playlistName());
-        if (!playlistResult.isSuccess())
-        {
-            return -1;
-        }
-        return playlistResult.getValue().getItems().size();
-    }
-
-    private PlaylistDraftKey toDraftKey(PlaylistDraftContext context)
-    {
-        return new PlaylistDraftKey(
-                context.guildId(),
-                context.channelId(),
-                context.messageId(),
-                context.userId(),
-                context.playlistName()
-        );
-    }
-
-    private PlaylistDraftState getOrCreatePlaylistDraftState(PlaylistDraftContext context)
-    {
-        PlaylistDraftKey key = toDraftKey(context);
-        PlaylistDraftState existing = playlistDrafts.get(key);
-        if (existing != null)
-        {
-            return existing;
-        }
-
-        PlaylistLoader.PlaylistResult<Playlist> playlistResult = bot.getPlaylistLoader()
-                .getPlaylistResult(context.playlistName());
-        if (!playlistResult.isSuccess())
-        {
-            return null;
-        }
-        Playlist playlist = playlistResult.getValue();
-        PlaylistDraftState created = new PlaylistDraftState(new ArrayList<>(playlist.getItems()));
-        PlaylistDraftState raced = playlistDrafts.putIfAbsent(key, created);
-        return raced != null ? raced : created;
+        return playlistDraftService.getPlaylistTrackCount(context);
     }
 
     public void loadPlaylistPreviewWithTracks(String playlistName, int maxPreview,
                                              Consumer<PlaylistPreviewWithTracks> callback)
     {
-        loadPlaylistLines(playlistName, 0, maxPreview, false, result ->
-        {
-            if (result == null)
-            {
-                callback.accept(null);
-                return;
-            }
-            callback.accept(new PlaylistPreviewWithTracks(
-                    result.playlistName,
-                    result.totalItems,
-                    result.hasMore,
-                    result.formattedLines
-            ));
-        });
+        playlistPreviewService.loadPlaylistPreviewWithTracks(playlistName, maxPreview, callback);
     }
 
     public void loadPlaylistPageWithTracks(String playlistName, int page, int pageSize,
                                            Consumer<PlaylistTracksPageInfo> callback)
     {
-        int safePage = Math.max(1, page);
-        int safePageSize = Math.max(1, pageSize);
-        int startIndex = (safePage - 1) * safePageSize;
-        loadPlaylistLines(playlistName, startIndex, safePageSize, false, callback);
+        playlistPreviewService.loadPlaylistPageWithTracks(playlistName, page, pageSize, callback);
     }
 
     public void loadPlaylistPageWithTracks(PlaylistDraftContext context, int page, int pageSize,
                                            Consumer<PlaylistTracksPageInfo> callback)
     {
-        int safePage = Math.max(1, page);
-        int safePageSize = Math.max(1, pageSize);
-        int startIndex = (safePage - 1) * safePageSize;
-
-        PlaylistDraftState draft = playlistDrafts.get(toDraftKey(context));
-        if (draft != null)
+        List<String> draftItems = playlistDraftService.getDraftItems(context);
+        if (draftItems != null)
         {
-            loadPlaylistLines(context.playlistName(), draft.items, startIndex, safePageSize, draft.dirty, callback);
+            playlistPreviewService.loadPlaylistPageWithTracks(
+                    context.playlistName(), draftItems, page, pageSize,
+                    playlistDraftService.isPlaylistDraftDirty(context), callback);
             return;
         }
-        loadPlaylistLines(context.playlistName(), startIndex, safePageSize, false, callback);
+        playlistPreviewService.loadPlaylistPageWithTracks(context.playlistName(), page, pageSize, callback);
     }
 
     public String getPlaylistTrackUrlAtPosition(String playlistName, int position)
     {
-        PlaylistLoader.PlaylistResult<Playlist> playlistResult = bot.getPlaylistLoader().getPlaylistResult(playlistName);
-        if (!playlistResult.isSuccess())
-        {
-            return null;
-        }
-        List<String> items = playlistResult.getValue().getItems();
-        if (position < 1 || position > items.size())
-        {
-            return null;
-        }
-        return items.get(position - 1);
+        return playlistPreviewService.getPlaylistTrackUrlAtPosition(playlistName, position);
     }
 
     public String getPlaylistTrackUrlAtPosition(PlaylistDraftContext context, int position)
     {
-        PlaylistDraftState draft = playlistDrafts.get(toDraftKey(context));
-        if (draft != null)
+        List<String> draftItems = playlistDraftService.getDraftItems(context);
+        if (draftItems != null)
         {
-            if (position < 1 || position > draft.items.size())
-            {
-                return null;
-            }
-            return draft.items.get(position - 1);
+            return playlistPreviewService.getPlaylistTrackUrlAtPosition(draftItems, position);
         }
-        return getPlaylistTrackUrlAtPosition(context.playlistName(), position);
+        return playlistPreviewService.getPlaylistTrackUrlAtPosition(context.playlistName(), position);
     }
 
     public void playNowFromUrl(Guild guild, Member member, String url, TextChannel channel, OutputAdapter output)
@@ -644,113 +502,6 @@ public class PlaylistService
         }));
     }
 
-    private void loadPlaylistLines(String playlistName, int startIndex, int maxCount,
-                                   boolean dirty, Consumer<PlaylistTracksPageInfo> callback)
-    {
-        PlaylistLoader.PlaylistResult<Playlist> playlistResult = bot.getPlaylistLoader().getPlaylistResult(playlistName);
-        if (!playlistResult.isSuccess())
-        {
-            callback.accept(null);
-            return;
-        }
-        Playlist playlist = playlistResult.getValue();
-        loadPlaylistLines(playlist.getName(), playlist.getItems(), startIndex, maxCount, dirty, callback);
-    }
-
-    private void loadPlaylistLines(String playlistName, List<String> sourceItems, int startIndex, int maxCount,
-                                   boolean dirty, Consumer<PlaylistTracksPageInfo> callback)
-    {
-        List<String> items = sourceItems == null ? List.of() : sourceItems;
-        int safeStartIndex = Math.max(0, startIndex);
-        if (safeStartIndex >= items.size())
-        {
-            callback.accept(new PlaylistTracksPageInfo(
-                    playlistName, items.size(), safeStartIndex, false, dirty, new ArrayList<>()));
-            return;
-        }
-
-        int toLoad = Math.min(Math.max(0, maxCount), items.size() - safeStartIndex);
-        if (toLoad == 0)
-        {
-            callback.accept(new PlaylistTracksPageInfo(
-                    playlistName, items.size(), safeStartIndex, items.size() > safeStartIndex, dirty, new ArrayList<>()));
-            return;
-        }
-
-        String[] lines = new String[toLoad];
-        AtomicInteger completed = new AtomicInteger(0);
-        Runnable maybeDone = () ->
-        {
-            if (completed.incrementAndGet() == toLoad)
-            {
-                callback.accept(new PlaylistTracksPageInfo(
-                        playlistName,
-                        items.size(),
-                        safeStartIndex,
-                        safeStartIndex + toLoad < items.size(),
-                        dirty,
-                        Arrays.asList(lines)
-                ));
-            }
-        };
-
-        for (int i = 0; i < toLoad; i++)
-        {
-            int index = i;
-            String url = items.get(safeStartIndex + i);
-            Object orderingId = "playlist-lines-" + playlistName + "-" + (safeStartIndex + i);
-            bot.getPlayerManager().loadItemOrdered(orderingId, url, new AudioLoadResultHandler()
-            {
-                @Override
-                public void trackLoaded(AudioTrack track)
-                {
-                    lines[index] = FormatUtil.formatTrackLineForEmbed(track);
-                    maybeDone.run();
-                }
-
-                @Override
-                public void playlistLoaded(AudioPlaylist ap)
-                {
-                    AudioTrack single;
-                    if (ap.isSearchResult() && !ap.getTracks().isEmpty())
-                    {
-                        single = ap.getTracks().get(0);
-                    }
-                    else if (ap.getSelectedTrack() != null)
-                    {
-                        single = ap.getSelectedTrack();
-                    }
-                    else if (!ap.getTracks().isEmpty())
-                    {
-                        single = ap.getTracks().get(0);
-                    }
-                    else
-                    {
-                        lines[index] = COULD_NOT_LOAD_LINE;
-                        maybeDone.run();
-                        return;
-                    }
-                    lines[index] = FormatUtil.formatTrackLineForEmbed(single);
-                    maybeDone.run();
-                }
-
-                @Override
-                public void noMatches()
-                {
-                    lines[index] = COULD_NOT_LOAD_LINE;
-                    maybeDone.run();
-                }
-
-                @Override
-                public void loadFailed(FriendlyException exception)
-                {
-                    lines[index] = COULD_NOT_LOAD_LINE;
-                    maybeDone.run();
-                }
-            });
-        }
-    }
-
     public void saveHistoryAsPlaylist(Guild guild, Member member, String playlistName, OutputAdapter output)
     {
         if (!canSaveHistoryAsPlaylist(guild, member))
@@ -796,7 +547,7 @@ public class PlaylistService
         PlaylistLoader.PlaylistResult<Void> createResult = bot.getPlaylistLoader().createPlaylistResult(sanitized);
         if (!createResult.isSuccess())
         {
-            output.replyError(mapPlaylistErrorToMessage(createResult.getError()));
+            output.replyError(PlaylistErrorMessages.toMessage(createResult.getError()));
             return;
         }
 
@@ -804,7 +555,7 @@ public class PlaylistService
         PlaylistLoader.PlaylistResult<Void> writeResult = bot.getPlaylistLoader().writePlaylistResult(sanitized, content);
         if (!writeResult.isSuccess())
         {
-            output.replyError(mapPlaylistErrorToMessage(writeResult.getError()));
+            output.replyError(PlaylistErrorMessages.toMessage(writeResult.getError()));
             return;
         }
         output.replySuccess("Saved " + uris.size() + " tracks from history to playlist `" + sanitized + "`!");
@@ -840,19 +591,4 @@ public class PlaylistService
         return true;
     }
 
-    private record PlaylistDraftKey(long guildId, long channelId, long messageId, long userId, String playlistName)
-    {
-    }
-
-    private static class PlaylistDraftState
-    {
-        private final List<String> items;
-        private boolean dirty;
-        private int revision;
-
-        private PlaylistDraftState(List<String> items)
-        {
-            this.items = items;
-        }
-    }
 }
