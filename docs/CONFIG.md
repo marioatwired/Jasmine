@@ -7,7 +7,7 @@ nested blocks and comments with `#` or `//`.
 Generate a fresh file with:
 
 ```bash
-java -jar Jasmine-0.1.1.jar generate-config
+java -jar Jasmine-0.2.0.jar generate-config
 ```
 
 The source of truth for defaults is
