@@ -1,0 +1,594 @@
+/*
+ * Copyright 2026 Arif Banai (arif-banai)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.github.marioatwired.jasmine.service;
+
+import com.github.marioatwired.jasmine.Bot;
+import com.github.marioatwired.jasmine.audio.AudioHandler;
+import com.github.marioatwired.jasmine.audio.QueuedTrack;
+import com.github.marioatwired.jasmine.audio.RequestMetadata;
+import com.github.marioatwired.jasmine.commands.v1.DJCommand;
+import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
+import com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist;
+import com.github.marioatwired.jasmine.queue.PlaybackHistory;
+import com.github.marioatwired.jasmine.service.MusicService.OutputAdapter;
+import com.github.marioatwired.jasmine.service.MusicService.PlaylistDetailsInfo;
+import com.github.marioatwired.jasmine.service.MusicService.PlaylistDraftContext;
+import com.github.marioatwired.jasmine.service.MusicService.PlaylistDraftMutationResult;
+import com.github.marioatwired.jasmine.service.MusicService.PlaylistNamesInfo;
+import com.github.marioatwired.jasmine.service.MusicService.PlaylistPreviewWithTracks;
+import com.github.marioatwired.jasmine.service.MusicService.PlaylistTracksPageInfo;
+import com.github.marioatwired.jasmine.service.MusicService.TrackAddResult;
+import com.github.marioatwired.jasmine.utils.FormatUtil;
+import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
+
+/**
+ * Saved playlist management, favorites, and playlist operation orchestration.
+ */
+public class PlaylistService
+{
+    private static final String FAVORITES_PLAYLIST_NAME = "favorites";
+    private static final Pattern WINDOWS_DRIVE_ABSOLUTE_PATH = Pattern.compile("^[A-Za-z]:[\\\\/].*");
+    private static final boolean WINDOWS_RUNTIME =
+            System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
+
+    private final Bot bot;
+    private final MusicService musicService;
+    private final PlaylistDraftService playlistDraftService;
+    private final PlaylistPreviewService playlistPreviewService;
+
+    public PlaylistService(Bot bot, MusicService musicService)
+    {
+        this.bot = bot;
+        this.musicService = musicService;
+        this.playlistDraftService = new PlaylistDraftService(bot);
+        this.playlistPreviewService = new PlaylistPreviewService(bot);
+    }
+
+    private AudioHandler getHandler(Guild guild)
+    {
+        return (AudioHandler) guild.getAudioManager().getSendingHandler();
+    }
+
+    private boolean requireDJPermission(Guild guild, Member member, OutputAdapter output, String action)
+    {
+        if (!DJCommand.checkDJPermission(bot, guild, member))
+        {
+            output.replyError("You need to be a DJ to " + action + "!");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isTooLong(AudioTrack track)
+    {
+        return musicService.isTooLong(track);
+    }
+
+    private String formatTooLongError(AudioTrack track)
+    {
+        return musicService.formatTooLongError(track);
+    }
+
+    private TrackAddResult addTrackToFront(Guild guild, Member member, AudioTrack track,
+                                           String queryArgs, TextChannel channel)
+    {
+        return musicService.addTrackToFront(guild, member, track, queryArgs, channel);
+    }
+
+    // ========== Playlist and favorites operations ==========
+
+    public void addCurrentTrackToFavorites(Guild guild, Member member, OutputAdapter output)
+    {
+        if (!requireDJPermission(guild, member, output, "add the current track to favorites"))
+            return;
+
+        AudioHandler handler = getHandler(guild);
+        if (handler == null)
+        {
+            output.replyError("There is no player in this server!");
+            return;
+        }
+
+        AudioTrack currentTrack = handler.getPlayer().getPlayingTrack();
+        if (currentTrack == null)
+        {
+            output.replyError("There is no track currently playing!");
+            return;
+        }
+
+        String favoriteEntry = currentTrack.getInfo().uri;
+        if (favoriteEntry == null || favoriteEntry.isBlank())
+        {
+            output.replyError("The current track does not have a valid URI or absolute path to save.");
+            return;
+        }
+        if (!isSupportedFavoriteEntry(favoriteEntry))
+        {
+            output.replyError("Only URI references or absolute file paths for this OS can be added to favorites.");
+            return;
+        }
+
+        PlaylistLoader.PlaylistResult<PlaylistLoader.AppendIfAbsentResult> appendResult =
+                bot.getPlaylistLoader().appendItemIfAbsentResult(FAVORITES_PLAYLIST_NAME, favoriteEntry);
+        if (!appendResult.isSuccess())
+        {
+            output.replyError(PlaylistErrorMessages.toMessage(appendResult.getError()));
+            return;
+        }
+
+        if (appendResult.getValue().getStatus() == PlaylistLoader.AppendIfAbsentStatus.ALREADY_PRESENT)
+        {
+            handler.markCurrentTrackFavorited(favoriteEntry);
+            output.editNowPlaying(handler);
+            output.replyWarning("This track is already favorited");
+            return;
+        }
+
+        handler.markCurrentTrackFavorited(favoriteEntry);
+        output.editNowPlaying(handler);
+        output.replySuccess("Added " + FormatUtil.filter(FormatUtil.getTrackTitle(currentTrack)) + " to Favorites");
+    }
+
+    private static boolean isSupportedFavoriteEntry(String value)
+    {
+        String candidate = value == null ? "" : value.trim();
+        if (candidate.isEmpty())
+            return false;
+        return isUriLikeReference(candidate) || isOsNativeAbsolutePath(candidate);
+    }
+
+    private static boolean isUriLikeReference(String value)
+    {
+        // Avoid treating Windows drive paths (e.g. C:\music\song.mp3) as URI schemes.
+        if (isWindowsAbsolutePathSyntax(value))
+            return false;
+        int colonIndex = value.indexOf(':');
+        if (colonIndex <= 0)
+            return false;
+        for (int i = 0; i < colonIndex; i++)
+        {
+            char c = value.charAt(i);
+            if (!Character.isLetterOrDigit(c) && c != '+' && c != '-' && c != '.')
+                return false;
+        }
+        return true;
+    }
+
+    private static boolean isOsNativeAbsolutePath(String value)
+    {
+        try
+        {
+            if (!Path.of(value).isAbsolute())
+                return false;
+        }
+        catch (RuntimeException ex)
+        {
+            return false;
+        }
+
+        if (WINDOWS_RUNTIME)
+            return isWindowsAbsolutePathSyntax(value);
+        return value.startsWith("/");
+    }
+
+    private static boolean isWindowsAbsolutePathSyntax(String value)
+    {
+        return WINDOWS_DRIVE_ABSOLUTE_PATH.matcher(value).matches() || value.startsWith("\\\\");
+    }
+
+    public PlaylistNamesInfo getAvailablePlaylistNames()
+    {
+        PlaylistLoader.PlaylistResult<List<String>> result = bot.getPlaylistLoader().getPlaylistNamesResult();
+        if (!result.isSuccess())
+        {
+            return PlaylistNamesInfo.error(PlaylistErrorMessages.toMessage(result.getError()));
+        }
+        return PlaylistNamesInfo.success(result.getValue());
+    }
+
+    public void queuePlaylist(Guild guild, Member member, String playlistName, TextChannel channel, OutputAdapter output)
+    {
+        PlaylistLoader.PlaylistResult<Playlist> playlistResult = bot.getPlaylistLoader().getPlaylistResult(playlistName);
+        if (!playlistResult.isSuccess())
+        {
+            output.replyError(PlaylistErrorMessages.toMessage(playlistResult.getError()));
+            return;
+        }
+        Playlist playlist = playlistResult.getValue();
+
+        AudioHandler handler = getHandler(guild);
+        if (handler == null)
+        {
+            handler = bot.getPlayerManager().setUpHandler(guild);
+        }
+        if (handler == null)
+        {
+            output.replyError("There is no player in this server!");
+            return;
+        }
+
+        AudioHandler finalHandler = handler;
+        playlist.loadTracks(bot.getPlayerManager(), at -> {
+            RequestMetadata metadata = new RequestMetadata(member.getUser(),
+                    new RequestMetadata.RequestInfo("playlist " + playlist.getName(), at.getInfo().uri),
+                    channel.getIdLong());
+            finalHandler.addTrack(new QueuedTrack(at, metadata));
+        }, () -> {
+            int loadedCount = playlist.getTracks().size();
+            int errorCount = playlist.getErrors().size();
+            if (loadedCount == 0)
+            {
+                output.replyWarning("No tracks were loaded from playlist `" + playlist.getName() + "`!");
+                return;
+            }
+
+            StringBuilder msg = new StringBuilder("Queued **")
+                    .append(loadedCount)
+                    .append("** track(s) from playlist `")
+                    .append(playlist.getName())
+                    .append("`.");
+            if (errorCount > 0)
+            {
+                msg.append(" Failed to load ").append(errorCount).append(" item(s).");
+            }
+            output.replySuccess(msg.toString());
+            if (finalHandler.getPlayer().getPlayingTrack() != null)
+            {
+                bot.getNowplayingHandler().requestReconcile(guild.getIdLong(), "playlist-loaded");
+            }
+        });
+    }
+
+    public void playPlaylistNow(Guild guild, Member member, String playlistName, TextChannel channel, OutputAdapter output)
+    {
+        PlaylistLoader.PlaylistResult<Playlist> playlistResult = bot.getPlaylistLoader().getPlaylistResult(playlistName);
+        if (!playlistResult.isSuccess())
+        {
+            output.replyError(PlaylistErrorMessages.toMessage(playlistResult.getError()));
+            return;
+        }
+
+        AudioHandler handler = getHandler(guild);
+        if (handler == null)
+        {
+            handler = bot.getPlayerManager().setUpHandler(guild);
+        }
+        if (handler == null)
+        {
+            output.replyError("There is no player in this server!");
+            return;
+        }
+
+        handler.stopAndClearQueuePreserveHistory();
+        queuePlaylist(guild, member, playlistName, channel, new OutputAdapter()
+        {
+            @Override
+            public void replySuccess(String content)
+            {
+                output.replySuccess("Now playing playlist `" + playlistName + "` (queue replaced). " + content);
+            }
+
+            @Override
+            public void replyError(String content)
+            {
+                output.replyError(content);
+            }
+
+            @Override
+            public void replyWarning(String content)
+            {
+                output.replyWarning(content);
+            }
+
+            @Override
+            public void editMessage(String content)
+            {
+            }
+
+            @Override
+            public void editMessage(String content, Consumer<Message> onSuccess)
+            {
+            }
+
+            @Override
+            public void editNowPlaying(AudioHandler handler)
+            {
+            }
+
+            @Override
+            public void editNoMusic(AudioHandler handler)
+            {
+            }
+
+            @Override
+            public void onShowHelp()
+            {
+            }
+        });
+    }
+
+    public PlaylistDetailsInfo getPlaylistDetails(String playlistName)
+    {
+        PlaylistLoader.PlaylistResult<Playlist> playlistResult = bot.getPlaylistLoader().getPlaylistResult(playlistName);
+        if (!playlistResult.isSuccess())
+        {
+            return null;
+        }
+        Playlist playlist = playlistResult.getValue();
+
+        List<String> items = playlist.getItems();
+        int previewLimit = Math.min(5, items.size());
+        List<String> preview = new ArrayList<>(items.subList(0, previewLimit));
+        boolean hasMore = items.size() > previewLimit;
+        return new PlaylistDetailsInfo(playlist.getName(), items.size(), preview, hasMore);
+    }
+
+    public boolean canEditPlaylistEntries(Guild guild, Member member)
+    {
+        return bot.getConfig().getOwnerId() == member.getIdLong()
+                || DJCommand.checkDJPermission(bot, guild, member);
+    }
+
+    public PlaylistDraftContext buildPlaylistDraftContext(long guildId, long channelId, long messageId,
+                                                          long userId, String playlistName)
+    {
+        return playlistDraftService.buildPlaylistDraftContext(guildId, channelId, messageId, userId, playlistName);
+    }
+
+    public PlaylistDraftMutationResult removePlaylistDraftItem(PlaylistDraftContext context, int position)
+    {
+        return playlistDraftService.removePlaylistDraftItem(context, position);
+    }
+
+    public PlaylistDraftMutationResult movePlaylistDraftItem(PlaylistDraftContext context, int fromPosition, int toPosition)
+    {
+        return playlistDraftService.movePlaylistDraftItem(context, fromPosition, toPosition);
+    }
+
+    public PlaylistDraftMutationResult savePlaylistDraft(PlaylistDraftContext context)
+    {
+        return playlistDraftService.savePlaylistDraft(context);
+    }
+
+    public void discardPlaylistDraft(PlaylistDraftContext context)
+    {
+        playlistDraftService.discardPlaylistDraft(context);
+    }
+
+    public boolean isPlaylistDraftDirty(PlaylistDraftContext context)
+    {
+        return playlistDraftService.isPlaylistDraftDirty(context);
+    }
+
+    public int getPlaylistTrackCount(PlaylistDraftContext context)
+    {
+        return playlistDraftService.getPlaylistTrackCount(context);
+    }
+
+    public void loadPlaylistPreviewWithTracks(String playlistName, int maxPreview,
+                                             Consumer<PlaylistPreviewWithTracks> callback)
+    {
+        playlistPreviewService.loadPlaylistPreviewWithTracks(playlistName, maxPreview, callback);
+    }
+
+    public void loadPlaylistPageWithTracks(String playlistName, int page, int pageSize,
+                                           Consumer<PlaylistTracksPageInfo> callback)
+    {
+        playlistPreviewService.loadPlaylistPageWithTracks(playlistName, page, pageSize, callback);
+    }
+
+    public void loadPlaylistPageWithTracks(PlaylistDraftContext context, int page, int pageSize,
+                                           Consumer<PlaylistTracksPageInfo> callback)
+    {
+        List<String> draftItems = playlistDraftService.getDraftItems(context);
+        if (draftItems != null)
+        {
+            playlistPreviewService.loadPlaylistPageWithTracks(
+                    context.playlistName(), draftItems, page, pageSize,
+                    playlistDraftService.isPlaylistDraftDirty(context), callback);
+            return;
+        }
+        playlistPreviewService.loadPlaylistPageWithTracks(context.playlistName(), page, pageSize, callback);
+    }
+
+    public String getPlaylistTrackUrlAtPosition(String playlistName, int position)
+    {
+        return playlistPreviewService.getPlaylistTrackUrlAtPosition(playlistName, position);
+    }
+
+    public String getPlaylistTrackUrlAtPosition(PlaylistDraftContext context, int position)
+    {
+        List<String> draftItems = playlistDraftService.getDraftItems(context);
+        if (draftItems != null)
+        {
+            return playlistPreviewService.getPlaylistTrackUrlAtPosition(draftItems, position);
+        }
+        return playlistPreviewService.getPlaylistTrackUrlAtPosition(context.playlistName(), position);
+    }
+
+    public void playNowFromUrl(Guild guild, Member member, String url, TextChannel channel, OutputAdapter output)
+    {
+        if (url == null || url.isBlank())
+        {
+            output.replyError("That playlist entry could not be loaded.");
+            return;
+        }
+        bot.getPlayerManager().loadItemOrdered(guild, url, bot.getAudioLoadWrapper().wrap(url, new AudioLoadResultHandler()
+        {
+            private void loadSingle(AudioTrack track)
+            {
+                TrackAddResult result = addTrackToFront(guild, member, track, url, channel);
+                if (result == null)
+                {
+                    output.replyError(formatTooLongError(track));
+                    return;
+                }
+                AudioHandler handler = getHandler(guild);
+                if (handler != null && handler.getPlayer().getPlayingTrack() != null)
+                {
+                    handler.getPlayer().stopTrack();
+                }
+                output.replySuccess("Now playing **" + FormatUtil.filter(FormatUtil.getTrackTitle(track)) + "**");
+            }
+
+            @Override
+            public void trackLoaded(AudioTrack track)
+            {
+                loadSingle(track);
+            }
+
+            @Override
+            public void playlistLoaded(AudioPlaylist ap)
+            {
+                AudioTrack single;
+                if (ap.isSearchResult() && !ap.getTracks().isEmpty())
+                {
+                    single = ap.getTracks().get(0);
+                }
+                else if (ap.getSelectedTrack() != null)
+                {
+                    single = ap.getSelectedTrack();
+                }
+                else if (!ap.getTracks().isEmpty())
+                {
+                    single = ap.getTracks().get(0);
+                }
+                else
+                {
+                    output.replyError("That playlist entry could not be loaded.");
+                    return;
+                }
+                loadSingle(single);
+            }
+
+            @Override
+            public void noMatches()
+            {
+                output.replyError("No matches found for that playlist entry.");
+            }
+
+            @Override
+            public void loadFailed(FriendlyException exception)
+            {
+                output.replyError("Error loading playlist entry: " + exception.getMessage());
+            }
+        }));
+    }
+
+    public void saveHistoryAsPlaylist(Guild guild, Member member, String playlistName, OutputAdapter output)
+    {
+        if (!canSaveHistoryAsPlaylist(guild, member))
+        {
+            output.replyError("You need to be a DJ or the bot owner to save history as a playlist!");
+            return;
+        }
+
+        AudioHandler handler = getHandler(guild);
+        if (handler == null)
+        {
+            output.replyError("There is no player in this server!");
+            return;
+        }
+
+        var history = handler.getQueue().getHistory();
+        if (!requireHistoryEnabled(history, output))
+        {
+            return;
+        }
+
+        List<QueuedTrack> previous = handler.getPreviousTracks();
+        List<String> uris = extractHttpUrisFromHistory(previous);
+        if (uris.isEmpty())
+        {
+            output.replyWarning("No valid track URLs in history to save (only http(s) sources are stored).");
+            return;
+        }
+
+        String sanitized = playlistName.replaceAll("\\s+", "_").replaceAll("[*?|\\/\":<>]", "");
+        if (sanitized.isEmpty())
+        {
+            output.replyError("Please provide a valid playlist name!");
+            return;
+        }
+
+        if (bot.getPlaylistLoader().getPlaylistResult(sanitized).isSuccess())
+        {
+            output.replyError("Playlist `" + sanitized + "` already exists! Choose a different name.");
+            return;
+        }
+
+        PlaylistLoader.PlaylistResult<Void> createResult = bot.getPlaylistLoader().createPlaylistResult(sanitized);
+        if (!createResult.isSuccess())
+        {
+            output.replyError(PlaylistErrorMessages.toMessage(createResult.getError()));
+            return;
+        }
+
+        String content = String.join("\r\n", uris);
+        PlaylistLoader.PlaylistResult<Void> writeResult = bot.getPlaylistLoader().writePlaylistResult(sanitized, content);
+        if (!writeResult.isSuccess())
+        {
+            output.replyError(PlaylistErrorMessages.toMessage(writeResult.getError()));
+            return;
+        }
+        output.replySuccess("Saved " + uris.size() + " tracks from history to playlist `" + sanitized + "`!");
+    }
+
+    private boolean canSaveHistoryAsPlaylist(Guild guild, Member member)
+    {
+        return bot.getConfig().getOwnerId() == member.getIdLong()
+                || DJCommand.checkDJPermission(bot, guild, member);
+    }
+
+    private static List<String> extractHttpUrisFromHistory(List<QueuedTrack> previous)
+    {
+        List<String> uris = new ArrayList<>();
+        for (QueuedTrack qt : previous)
+        {
+            String uri = qt.getTrack().getInfo().uri;
+            if (uri != null && uri.startsWith("http"))
+            {
+                uris.add(uri);
+            }
+        }
+        return uris;
+    }
+
+    private boolean requireHistoryEnabled(PlaybackHistory<QueuedTrack> history, OutputAdapter output)
+    {
+        if (history.getMaxSize() == 0)
+        {
+            output.replyError(MusicService.HISTORY_DISABLED_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+}
