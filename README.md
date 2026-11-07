@@ -13,6 +13,8 @@
 
 > **Jasmine is a fork of [JMusicBot](https://github.com/jagrosh/MusicBot), originally created by [jagrosh](https://github.com/jagrosh), with maintenance and changes from [arif-banai](https://github.com/arif-banai).**
 > Jasmine keeps the same configuration format and is licensed under the Apache License 2.0. See [NOTICE](NOTICE) for attribution.
+>
+> **AI-assisted development:** Parts of Jasmine are developed with the help of AI coding assistants. AI-assisted changes are reviewed and tested by the maintainer before release. This is disclosed openly so users can evaluate the project with full context.
 
 ## Features
 
