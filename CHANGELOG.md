@@ -5,6 +5,18 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Automated shaded-JAR smoke tests in CI and the release workflow.
+- SHA-256 checksums published alongside release JARs.
+- Dependency Review workflow for pull requests.
+
+### Changed
+
+- The release workflow now verifies the published Docker image manifest.
+
 ## [0.3.1] - 2026-11-08
 
 ### Changed

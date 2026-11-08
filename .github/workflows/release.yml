@@ -75,11 +75,17 @@ jobs:
       - name: Rename release JAR
         run: mv target/*-All.jar "Jasmine-${{ steps.version.outputs.version }}.jar"
 
+      - name: Smoke test release JAR
+        run: bash scripts/smoke-test-jar.sh "Jasmine-${{ steps.version.outputs.version }}.jar"
+
+      - name: Generate SHA-256 checksum
+        run: sha256sum "Jasmine-${{ steps.version.outputs.version }}.jar" > "Jasmine-${{ steps.version.outputs.version }}.jar.sha256"
+
       - name: Upload release JAR
         uses: actions/upload-artifact@v7
         with:
           name: release-jar
-          path: Jasmine-*.jar
+          path: Jasmine-*
           if-no-files-found: error
 
       - name: Upload coverage report
@@ -132,6 +138,9 @@ jobs:
       - name: Image digest
         run: echo "Image pushed with digest ${{ steps.build.outputs.digest }}"
 
+      - name: Verify published image manifest
+        run: docker buildx imagetools inspect "ghcr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.version }}"
+
   release:
     name: Create GitHub Release
     needs:
@@ -157,7 +166,7 @@ jobs:
           commit: ${{ github.sha }}
           draft: false
           prerelease: ${{ needs.build.outputs.prerelease == 'true' }}
-          artifacts: 'Jasmine-*.jar'
+          artifacts: 'Jasmine-*'
           body: |
             Jasmine v${{ needs.build.outputs.version }}
 
@@ -171,6 +180,11 @@ jobs:
             ```bash
             docker pull ghcr.io/marioatwired/jasmine:${{ needs.build.outputs.version }}
             ```
+
+            ### Verify download
+
+            The release includes `Jasmine-${{ needs.build.outputs.version }}.jar.sha256`.
+            Compare it with the downloaded JAR using `sha256sum -c` or `Get-FileHash`.
 
             ### Configuration
 
