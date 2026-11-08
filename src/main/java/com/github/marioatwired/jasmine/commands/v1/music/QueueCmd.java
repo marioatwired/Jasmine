@@ -46,7 +46,7 @@ public class QueueCmd extends MusicCommand
         this.help = "shows the current queue";
         this.arguments = "[pagenum]";
         this.aliases = bot.getConfig().getAliases(this.name);
-        this.bePlaying = true;
+        this.bePlaying = false;
         this.botPermissions = new Permission[]{Permission.MESSAGE_ADD_REACTION, Permission.MESSAGE_EMBED_LINKS};
         builder = new Paginator.Builder()
                 .setColumns(1)

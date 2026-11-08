@@ -96,6 +96,9 @@ public class PlayerManager extends DefaultAudioPlayerManager
             handler = new AudioHandler(this, guild, player);
             player.addListener(handler);
             guild.getAudioManager().setSendingHandler(handler);
+
+            if (bot.getQueuePersistence() != null)
+                bot.getQueuePersistence().restore(guild, handler);
         }
         else
             handler = (AudioHandler) guild.getAudioManager().getSendingHandler();

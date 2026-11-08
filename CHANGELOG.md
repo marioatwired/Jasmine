@@ -5,6 +5,22 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Per-guild queue persistence in `queuedata.json`, saved periodically and on
+  graceful shutdown.
+- Saved queues and the current track are restored automatically when Jasmine
+  starts. No audio plays until a user invokes a playback command.
+- `/play` with no arguments resumes the first restored track when the player is
+  idle.
+- Queue views are available even when no track is currently playing.
+
+### Fixed
+
+- `playnow` and `skipto` now start the selected track when the player is idle.
+
 ## [0.3.3] - 2026-11-08
 
 ### Changed

@@ -124,7 +124,8 @@ docker compose up -d
 
 ## Updating
 
-- JAR: stop the bot, replace the JAR, keep `config.txt` and `Playlists/`, start again.
+- JAR: stop the bot, replace the JAR, keep `config.txt`, `serversettings.json`,
+  `queuedata.json`, and `Playlists/`, then start again.
 - Docker: `docker pull ghcr.io/marioatwired/jasmine:latest` and recreate the container.
 
 Configuration migrations run automatically. A `.bak` backup is created before

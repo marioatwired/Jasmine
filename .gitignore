@@ -5,6 +5,7 @@
 # Runtime data
 /config.txt
 /serversettings.json
+/queuedata.json
 /youtubetoken.txt
 /Playlists/
 /.jasmine.lock

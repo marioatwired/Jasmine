@@ -119,6 +119,22 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
         LOGGER.debug("Added track to queue: {}", qtrack.getTrack().getInfo().title);
         return queue.add(qtrack);
     }
+
+    /**
+     * Appends tracks restored from a previous session without starting playback.
+     *
+     * @param tracks tracks to append, in playback order
+     */
+    public void restoreTracks(List<QueuedTrack> tracks)
+    {
+        if (tracks == null || tracks.isEmpty())
+            return;
+
+        for (QueuedTrack track : tracks)
+            queue.addAt(queue.size(), track);
+
+        LOGGER.info("Restored {} track(s) to the queue", tracks.size());
+    }
     
     /**
      * Gets the playback history from the queue.

@@ -60,6 +60,11 @@ public class StartupLifecycleListener extends ListenerAdapter {
                     "This bot is not on any guilds!\n\nUse this link to add the bot to your server:\n" + inviteUrl);
         }
 
+        if (bot.getQueuePersistence() != null) {
+            bot.getQueuePersistence().start();
+            bot.getQueuePersistence().restoreAll();
+        }
+
         if (bot.getCommandClient() != null) {
             SlashCommandRegistry.registerIfChanged(event.getJDA(), bot.getCommandClient());
         }
