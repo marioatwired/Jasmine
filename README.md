@@ -87,6 +87,22 @@ docker compose up -d
 
 The container runs as UID/GID `10001` (`jasmine`). Make sure the mounted directory is writable by that user, or set `user:` in the Compose file.
 
+## Verify a release
+
+Each GitHub release includes a `Jasmine-<version>.jar.sha256` checksum next to the JAR.
+
+On Linux or macOS, place both files in the same directory and run:
+
+```bash
+sha256sum -c Jasmine-0.3.1.jar.sha256
+```
+
+On Windows PowerShell, compute the hash and compare it with the checksum file:
+
+```powershell
+Get-FileHash .\Jasmine-0.3.1.jar -Algorithm SHA256
+```
+
 ## Configuration
 
 The default configuration is generated from [`src/main/resources/reference.conf`](src/main/resources/reference.conf) and written to `config.txt`. It uses HOCON syntax and supports versioned migrations, so existing JMusicBot-style configs continue to work.

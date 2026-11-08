@@ -35,6 +35,9 @@ jobs:
           COMMIT_TIME=$(git log -1 --format=%cI)
           ./mvnw --batch-mode verify -Pcoverage -Dproject.build.outputTimestamp="$COMMIT_TIME"
 
+      - name: Smoke test shaded JAR
+        run: bash scripts/smoke-test-jar.sh
+
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v7
@@ -97,3 +100,6 @@ jobs:
 
       - name: Image digest
         run: echo "Image pushed with digest ${{ steps.build.outputs.digest }}"
+
+      - name: Verify published image manifest
+        run: docker buildx imagetools inspect "ghcr.io/${{ env.IMAGE_NAME }}:latest"

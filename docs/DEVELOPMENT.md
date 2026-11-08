@@ -163,8 +163,12 @@ The package rename means most upstream patches will need manual adaptation.
    git push origin v0.3.1
    ```
 
-6. The `Release` workflow builds `Jasmine-0.3.1.jar`, creates the GitHub
-   release, and publishes `ghcr.io/marioatwired/jasmine:0.3.1` and `:latest`.
+6. The `Release` workflow builds `Jasmine-0.3.1.jar`, runs the packaged-JAR
+   smoke test, generates the SHA-256 checksum, creates the GitHub release,
+   verifies the published Docker manifest, and publishes
+   `ghcr.io/marioatwired/jasmine:0.3.1` and `:latest`.
+7. Download the release JAR and checksum, then verify them before announcing
+   the release.
 
 Docker images are also published for every push to `master` as `:latest` and
 `:sha-<short>`.
