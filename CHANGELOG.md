@@ -5,7 +5,7 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-11-08
 
 ### Changed
 
@@ -15,7 +15,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `MusicService` facade.
 - Split queue operations into `QueueService`, separate from playback control in
   `PlayerService`.
-- Replaced deprecated `Member#getColor()` calls with `RoleColors#getPrimary()`.
+- Replaced deprecated `Member#getColor()`, `URL(String)`, `OrderedMenu`, and
+  redundant `guildOnly` assignments with supported APIs. Text search and
+  force-remove now use Discord select menus for selection.
 
 ### Added
 
