@@ -153,6 +153,25 @@ public class AudioHandlerTest extends TestBase {
             assertSame(second, audioHandler.getQueue().get(1));
             verify(audioPlayer, never()).playTrack(any());
         }
+
+        @Test
+        @DisplayName("restoreHistory() preserves most-recent-first order")
+        public void testRestoreHistoryPreservesOrder() {
+            QueuedTrack mostRecent = mock(QueuedTrack.class);
+            QueuedTrack older = mock(QueuedTrack.class);
+            AudioTrack mostRecentTrack = mock(AudioTrack.class);
+            AudioTrack olderTrack = mock(AudioTrack.class);
+            when(mostRecent.getTrack()).thenReturn(mostRecentTrack);
+            when(older.getTrack()).thenReturn(olderTrack);
+            when(mostRecentTrack.getIdentifier()).thenReturn("most-recent");
+            when(olderTrack.getIdentifier()).thenReturn("older");
+
+            audioHandler.restoreHistory(java.util.List.of(mostRecent, older));
+
+            assertEquals(2, audioHandler.getQueue().getHistory().size());
+            assertSame(mostRecent, audioHandler.getQueue().getHistory().get(0));
+            assertSame(older, audioHandler.getQueue().getHistory().get(1));
+        }
     }
 
     // ==================== Stop and Clear Tests ====================

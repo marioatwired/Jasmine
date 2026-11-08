@@ -24,7 +24,7 @@
 - A desktop GUI with a console, queue timeline, source health, and performance panels.
 - Per-guild settings, DJ role, custom prefix, and queue types (linear or fair).
 - Playlists, playback history, repeat modes, seeking, and vote-skip.
-- Queue and current-track restoration across bot restarts.
+- Queue, current-track, and playback-history restoration across bot restarts.
 - YouTube, SoundCloud, Bandcamp, Vimeo, Twitch, HTTP streams, and local files.
 - YouTube OAuth device flow for sources that require sign-in.
 - Granular HTTP proxy configuration for Lavaplayer, JDA, and GitHub update checks.

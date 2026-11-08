@@ -5,6 +5,18 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Playback history is now persisted alongside the queue, so `/history` and
+  `/previous` survive bot restarts.
+
+### Changed
+
+- `queuedata.json` schema version 2. Version 1 files are read with an empty
+  history.
+
 ## [0.4.0] - 2026-11-09
 
 ### Added

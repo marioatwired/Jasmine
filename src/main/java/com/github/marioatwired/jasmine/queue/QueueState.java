@@ -36,7 +36,7 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 final class QueueState
 {
-    static final int CURRENT_VERSION = 1;
+    static final int CURRENT_VERSION = 2;
 
     public final int version;
     public final Map<Long, GuildQueue> guilds;
@@ -59,20 +59,25 @@ final class QueueState
     {
         public final StoredTrack current;
         public final List<StoredTrack> queue;
+        public final List<StoredTrack> history;
 
         @JsonCreator
         GuildQueue(@JsonProperty("current") StoredTrack current,
-                   @JsonProperty("queue") List<StoredTrack> queue)
+                   @JsonProperty("queue") List<StoredTrack> queue,
+                   @JsonProperty("history") List<StoredTrack> history)
         {
             this.current = current;
             this.queue = queue == null
                     ? List.of()
                     : queue.stream().filter(Objects::nonNull).toList();
+            this.history = history == null
+                    ? List.of()
+                    : history.stream().filter(Objects::nonNull).toList();
         }
 
         boolean isEmpty()
         {
-            return current == null && queue.isEmpty();
+            return current == null && queue.isEmpty() && history.isEmpty();
         }
 
         List<StoredTrack> orderedTracks()
