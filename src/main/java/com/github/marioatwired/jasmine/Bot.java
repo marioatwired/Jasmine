@@ -15,8 +15,6 @@
  */
 package com.github.marioatwired.jasmine;
 
-import com.jagrosh.jdautilities.command.CommandClient;
-import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
 import com.github.marioatwired.jasmine.audio.AloneInVoiceHandler;
 import com.github.marioatwired.jasmine.audio.AudioHandler;
 import com.github.marioatwired.jasmine.audio.AudioLoadWrapper;
@@ -24,13 +22,16 @@ import com.github.marioatwired.jasmine.audio.NowPlayingHandler;
 import com.github.marioatwired.jasmine.audio.PlayerManager;
 import com.github.marioatwired.jasmine.audio.TrackLoadingMonitor;
 import com.github.marioatwired.jasmine.entities.UserInteraction;
-import javax.swing.JFrame;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
-import com.github.marioatwired.jasmine.settings.SettingsManager;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.PlayerService;
 import com.github.marioatwired.jasmine.service.SearchService;
+import com.github.marioatwired.jasmine.settings.SettingsManager;
 import com.github.marioatwired.jasmine.utils.InstanceLock;
 import com.github.marioatwired.jasmine.utils.YoutubeOauth2TokenHandler;
+import com.jagrosh.jdautilities.command.CommandClient;
+import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
+import javax.swing.JFrame;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
@@ -54,6 +55,7 @@ public class Bot
     private final PlaylistLoader playlists;
     private final NowPlayingHandler nowplaying;
     private final AloneInVoiceHandler aloneInVoiceHandler;
+    private final PlayerService playerService;
     private final MusicService musicService;
     private final SearchService searchService;
     private final YoutubeOauth2TokenHandler youTubeOauth2TokenHandler;
@@ -84,8 +86,9 @@ public class Bot
         this.nowplaying.init();
         this.aloneInVoiceHandler = new AloneInVoiceHandler(this);
         this.aloneInVoiceHandler.init();
-        this.musicService = new MusicService(this);
-        this.searchService = new SearchService(this);
+        this.playerService = new PlayerService(this);
+        this.musicService = new MusicService(this, playerService);
+        this.searchService = new SearchService(this, playerService);
         
         // Initialize audio load wrapper - use NO_OP when GUI is disabled to avoid monitoring overhead
         this.audioLoadWrapper = isNoGUI() 

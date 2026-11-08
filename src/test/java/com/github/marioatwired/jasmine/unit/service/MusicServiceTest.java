@@ -19,6 +19,10 @@ import com.github.marioatwired.jasmine.audio.QueuedTrack;
 import com.github.marioatwired.jasmine.audio.RequestMetadata;
 import com.github.marioatwired.jasmine.queue.PlaybackHistory;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
+import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
+import com.github.marioatwired.jasmine.service.dto.QueueInfo;
+import com.github.marioatwired.jasmine.service.dto.VolumeResult;
 import com.github.marioatwired.jasmine.settings.RepeatMode;
 import com.github.marioatwired.jasmine.testutil.service.MusicServiceScenarioBuilder;
 import com.github.marioatwired.jasmine.testutil.service.OutputAdapterSpy;
@@ -786,7 +790,7 @@ public class MusicServiceTest
             fixture.withVolume(50);
 
             // When
-            MusicService.VolumeResult result = musicService.setVolume(fixture.getGuild(), 75);
+            VolumeResult result = musicService.setVolume(fixture.getGuild(), 75);
 
             // Then
             verify(fixture.getAudioPlayer()).setVolume(75);
@@ -801,8 +805,8 @@ public class MusicServiceTest
         void setVolume_returnsNullForInvalidVolume()
         {
             // When
-            MusicService.VolumeResult resultLow = musicService.setVolume(fixture.getGuild(), -1);
-            MusicService.VolumeResult resultHigh = musicService.setVolume(fixture.getGuild(), 151);
+            VolumeResult resultLow = musicService.setVolume(fixture.getGuild(), -1);
+            VolumeResult resultHigh = musicService.setVolume(fixture.getGuild(), 151);
 
             // Then
             assertNull(resultLow);
@@ -1223,7 +1227,7 @@ public class MusicServiceTest
             when(fixture.getPlaylistLoader().getPlaylistNamesResult())
                     .thenReturn(com.github.marioatwired.jasmine.playlist.PlaylistLoader.PlaylistResult.failure(error));
 
-            MusicService.PlaylistNamesInfo info = musicService.getAvailablePlaylistNames();
+            PlaylistNamesInfo info = musicService.getAvailablePlaylistNames();
 
             assertTrue(info.hasError());
             assertTrue(info.errorMessage.contains("unavailable"));
@@ -1517,7 +1521,7 @@ public class MusicServiceTest
             when(fixture.getQueue().getHistory()).thenReturn(history);
             when(history.getMaxSize()).thenReturn(40);
 
-            MusicService.HistoryInfo historyInfo = musicService.getHistoryInfo(fixture.getGuild(), fixture.getJda());
+            HistoryInfo historyInfo = musicService.getHistoryInfo(fixture.getGuild(), fixture.getJda());
 
             assertNotNull(historyInfo);
             assertEquals(1, historyInfo.tracks.length);
@@ -1540,7 +1544,7 @@ public class MusicServiceTest
             QueuedTrack queuedTrack = new QueuedTrack(track, RequestMetadata.EMPTY);
             when(fixture.getQueue().getList()).thenReturn(List.of(queuedTrack));
 
-            MusicService.QueueInfo queueInfo = musicService.getQueueInfo(fixture.getGuild(), fixture.getJda());
+            QueueInfo queueInfo = musicService.getQueueInfo(fixture.getGuild(), fixture.getJda());
 
             assertNotNull(queueInfo);
             assertEquals(1, queueInfo.tracks.length);
@@ -1553,7 +1557,7 @@ public class MusicServiceTest
         {
             when(fixture.getAudioManager().getSendingHandler()).thenReturn(null);
 
-            MusicService.HistoryInfo info = musicService.getHistoryInfo(fixture.getGuild(), fixture.getJda());
+            HistoryInfo info = musicService.getHistoryInfo(fixture.getGuild(), fixture.getJda());
 
             assertNull(info);
         }
@@ -1753,7 +1757,7 @@ public class MusicServiceTest
             when(history.getMaxSize()).thenReturn(0);
             when(fixture.getQueue().getHistory()).thenReturn(history);
 
-            MusicService.HistoryInfo info = musicService.getHistoryInfo(fixture.getGuild(), fixture.getJda());
+            HistoryInfo info = musicService.getHistoryInfo(fixture.getGuild(), fixture.getJda());
 
             assertNotNull(info);
             assertTrue(info.isDisabled());

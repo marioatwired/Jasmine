@@ -21,6 +21,11 @@ import com.github.marioatwired.jasmine.listener.interaction.ComponentIdParsers;
 import com.github.marioatwired.jasmine.listener.interaction.InteractionGuards;
 import com.github.marioatwired.jasmine.listener.interaction.OutputAdapters;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDetailsInfo;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDraftContext;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDraftMutationResult;
+import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -89,13 +94,13 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                 event.reply("Only the user who ran the command can use these buttons!").setEphemeral(true).queue();
                 return;
             }
-            MusicService.PlaylistNamesInfo namesInfo = loadPlaylistNames();
+            PlaylistNamesInfo namesInfo = loadPlaylistNames();
             if (!namesInfo.hasError()
                     && backId.listSelectedIndex() > 0
                     && backId.listSelectedIndex() <= namesInfo.names.size())
             {
                 String playlistName = namesInfo.names.get(backId.listSelectedIndex() - 1);
-                MusicService.PlaylistDraftContext draftContext = buildDraftContext(event, backId.userId(), playlistName);
+                PlaylistDraftContext draftContext = buildDraftContext(event, backId.userId(), playlistName);
                 if (bot.getMusicService().isPlaylistDraftDirty(draftContext))
                 {
                     bot.getMusicService().discardPlaylistDraft(draftContext);
@@ -119,7 +124,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
             return;
         }
 
-        MusicService.PlaylistNamesInfo playlistNamesInfo = loadPlaylistNames();
+        PlaylistNamesInfo playlistNamesInfo = loadPlaylistNames();
         if (playlistNamesInfo.hasError())
         {
             event.reply(playlistNamesInfo.errorMessage).setEphemeral(true).queue();
@@ -133,14 +138,14 @@ public class PlaylistsInteractionListener extends ListenerAdapter
         }
 
         String playlistName = playlists.get(id.playlistIndex() - 1);
-        MusicService.PlaylistDetailsInfo detailsInfo = bot.getMusicService().getPlaylistDetails(playlistName);
+        PlaylistDetailsInfo detailsInfo = bot.getMusicService().getPlaylistDetails(playlistName);
         if (detailsInfo == null)
         {
             event.reply("Playlist no longer exists. Click Back and Refresh.").setEphemeral(true).queue();
             return;
         }
 
-        MusicService.PlaylistDraftContext draftContext = buildDraftContext(event, id.userId(), playlistName);
+        PlaylistDraftContext draftContext = buildDraftContext(event, id.userId(), playlistName);
         int totalItems = bot.getMusicService().getPlaylistTrackCount(draftContext);
         if (totalItems < 0)
         {
@@ -208,7 +213,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
             }
 
             TextChannel channel = event.getChannel().asTextChannel();
-            MusicService.OutputAdapter output = OutputAdapters.forPlaylistsReply(event);
+            OutputAdapter output = OutputAdapters.forPlaylistsReply(event);
             if (action.equals("queueall"))
             {
                 musicService.queuePlaylist(event.getGuild(), event.getMember(), playlistName, channel, output);
@@ -231,7 +236,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
             }
             if (action.equals("save"))
             {
-                MusicService.PlaylistDraftMutationResult saveResult = musicService.savePlaylistDraft(draftContext);
+                PlaylistDraftMutationResult saveResult = musicService.savePlaylistDraft(draftContext);
                 if (!saveResult.success)
                 {
                     event.reply(saveResult.errorMessage).setEphemeral(true).queue();
@@ -265,7 +270,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                 event.reply("You need to be a DJ or the bot owner to edit playlists!").setEphemeral(true).queue();
                 return;
             }
-            MusicService.PlaylistDraftMutationResult removeResult = musicService.removePlaylistDraftItem(draftContext, selectedTrack);
+            PlaylistDraftMutationResult removeResult = musicService.removePlaylistDraftItem(draftContext, selectedTrack);
             if (!removeResult.success)
             {
                 event.reply(removeResult.errorMessage).setEphemeral(true).queue();
@@ -309,7 +314,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                 case "movebottom" -> totalItems;
                 default -> selectedTrack;
             };
-            MusicService.PlaylistDraftMutationResult moveResult =
+            PlaylistDraftMutationResult moveResult =
                     musicService.movePlaylistDraftItem(draftContext, selectedTrack, target);
             if (!moveResult.success)
             {
@@ -326,7 +331,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
         }
 
         TextChannel channel = event.getChannel().asTextChannel();
-        MusicService.OutputAdapter output = OutputAdapters.forPlaylistsReply(event);
+        OutputAdapter output = OutputAdapters.forPlaylistsReply(event);
         String selectedTrackUrl = musicService.getPlaylistTrackUrlAtPosition(draftContext, selectedTrack);
         if (selectedTrackUrl == null || selectedTrackUrl.isBlank())
         {
@@ -381,7 +386,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
             return;
         }
 
-        MusicService.PlaylistNamesInfo namesInfo = loadPlaylistNames();
+        PlaylistNamesInfo namesInfo = loadPlaylistNames();
         if (namesInfo.hasError())
         {
             event.reply(namesInfo.errorMessage).setEphemeral(true).queue();
@@ -405,8 +410,8 @@ public class PlaylistsInteractionListener extends ListenerAdapter
             return;
         }
 
-        MusicService.PlaylistDraftContext draftContext = buildDraftContext(event, id.userId(), playlistName);
-        MusicService.PlaylistDraftMutationResult moveResult =
+        PlaylistDraftContext draftContext = buildDraftContext(event, id.userId(), playlistName);
+        PlaylistDraftMutationResult moveResult =
                 musicService.movePlaylistDraftItem(draftContext, id.fromTrack(), toPosition);
         if (!moveResult.success)
         {
@@ -437,7 +442,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
             return;
         }
 
-        MusicService.PlaylistNamesInfo playlistNamesInfo = loadPlaylistNames();
+        PlaylistNamesInfo playlistNamesInfo = loadPlaylistNames();
         if (playlistNamesInfo.hasError())
         {
             event.reply(playlistNamesInfo.errorMessage).setEphemeral(true).queue();
@@ -525,7 +530,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                 event.reply("Playlist no longer exists. Click Refresh.").setEphemeral(true).queue();
                 return;
             }
-            MusicService.PlaylistDraftContext draftContext = buildDraftContext(event, userId, selectedPlaylist);
+            PlaylistDraftContext draftContext = buildDraftContext(event, userId, selectedPlaylist);
             event.deferEdit().queue(hook -> renderPlaylistDetailsView(
                     hook,
                     event,
@@ -546,7 +551,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
         }
 
         TextChannel channel = event.getChannel().asTextChannel();
-        MusicService.OutputAdapter output = OutputAdapters.forPlaylistsReply(event);
+        OutputAdapter output = OutputAdapters.forPlaylistsReply(event);
         if (action.equals("queue"))
         {
             musicService.queuePlaylist(event.getGuild(), event.getMember(), selectedPlaylist, channel, output);
@@ -560,7 +565,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
         }
     }
 
-    private MusicService.PlaylistNamesInfo loadPlaylistNames()
+    private PlaylistNamesInfo loadPlaylistNames()
     {
         return bot.getMusicService().getAvailablePlaylistNames();
     }
@@ -570,14 +575,14 @@ public class PlaylistsInteractionListener extends ListenerAdapter
     {
         int playlistsOnPage = PlaylistsSlashCmd.getPlaylistsOnPage(page, playlists.size());
         MessageEmbed embed = PlaylistsSlashCmd.buildPlaylistsEmbed(playlists, page, totalPages, selectedIndex,
-                event.getMember().getColor());
+                event.getMember().getColors().getPrimary());
         List<ActionRow> components = PlaylistsSlashCmd.buildPlaylistsComponents(page, totalPages, playlistsOnPage, selectedIndex, userId);
         event.editMessageEmbeds(embed).setComponents(components).queue();
     }
 
     private void renderPlaylistListView(ButtonInteractionEvent event, int listPage, int listSelectedIndex, long userId)
     {
-        MusicService.PlaylistNamesInfo playlistNamesInfo = loadPlaylistNames();
+        PlaylistNamesInfo playlistNamesInfo = loadPlaylistNames();
         if (playlistNamesInfo.hasError())
         {
             event.reply(playlistNamesInfo.errorMessage).setEphemeral(true).queue();
@@ -605,7 +610,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
 
     private void renderPlaylistDetailsView(ButtonInteractionEvent event, int playlistIndex, int listPage,
                                            int detailsPage, int selectedTrack, long userId, String playlistName,
-                                           MusicService.PlaylistDraftContext draftContext)
+                                           PlaylistDraftContext draftContext)
     {
         renderPlaylistDetailsView(result ->
                         event.editMessageEmbeds(result.embed()).setComponents(result.components()).queue(),
@@ -616,7 +621,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
 
     private void renderPlaylistDetailsView(StringSelectInteractionEvent event, int playlistIndex, int listPage,
                                            int detailsPage, int selectedTrack, long userId, String playlistName,
-                                           MusicService.PlaylistDraftContext draftContext)
+                                           PlaylistDraftContext draftContext)
     {
         renderPlaylistDetailsView(result ->
                         event.editMessageEmbeds(result.embed()).setComponents(result.components()).queue(),
@@ -629,7 +634,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                                            ButtonInteractionEvent event,
                                            int playlistIndex, int listPage, int detailsPage,
                                            int selectedTrack, long userId, String playlistName,
-                                           MusicService.PlaylistDraftContext draftContext)
+                                           PlaylistDraftContext draftContext)
     {
         renderPlaylistDetailsView(result ->
                         hook.editOriginalEmbeds(result.embed()).setComponents(result.components()).queue(),
@@ -644,7 +649,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                                            net.dv8tion.jda.api.entities.Member member,
                                            int playlistIndex, int listPage, int detailsPage,
                                            int selectedTrack, long userId, String playlistName,
-                                           MusicService.PlaylistDraftContext draftContext)
+                                           PlaylistDraftContext draftContext)
     {
         MusicService musicService = bot.getMusicService();
         musicService.loadPlaylistPageWithTracks(
@@ -663,7 +668,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                     int safeSelected = (selectedTrack >= firstOnPage && selectedTrack <= lastOnPage) ? selectedTrack : 0;
 
                     java.awt.Color color = member != null
-                            ? member.getColor()
+                            ? member.getColors().getPrimary()
                             : null;
                     MessageEmbed embed = PlaylistsSlashCmd.buildPlaylistTracksEmbed(
                             result.playlistName, result.totalItems, safePage, totalPages, result.formattedLines,
@@ -678,7 +683,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                 });
     }
 
-    private void renderPlaylistMoveMenu(ButtonInteractionEvent event, MusicService.PlaylistDraftContext draftContext,
+    private void renderPlaylistMoveMenu(ButtonInteractionEvent event, PlaylistDraftContext draftContext,
                                         int playlistIndex, int listPage, int detailsPage, int selectedTrack,
                                         long userId)
     {
@@ -705,7 +710,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                             result.formattedLines,
                             safeSelected,
                             result.dirty,
-                            event.getMember() != null ? event.getMember().getColor() : null
+                            event.getMember() != null ? event.getMember().getColors().getPrimary() : null
                     );
 
                     StringSelectMenu.Builder menuBuilder = StringSelectMenu
@@ -733,7 +738,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                 });
     }
 
-    private MusicService.PlaylistDraftContext buildDraftContext(ButtonInteractionEvent event, long userId, String playlistName)
+    private PlaylistDraftContext buildDraftContext(ButtonInteractionEvent event, long userId, String playlistName)
     {
         return bot.getMusicService().buildPlaylistDraftContext(
                 event.getGuild().getIdLong(),
@@ -744,7 +749,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
         );
     }
 
-    private MusicService.PlaylistDraftContext buildDraftContext(StringSelectInteractionEvent event, long userId, String playlistName)
+    private PlaylistDraftContext buildDraftContext(StringSelectInteractionEvent event, long userId, String playlistName)
     {
         return bot.getMusicService().buildPlaylistDraftContext(
                 event.getGuild().getIdLong(),

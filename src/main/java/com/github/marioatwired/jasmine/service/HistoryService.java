@@ -20,6 +20,7 @@ import com.github.marioatwired.jasmine.audio.AudioHandler;
 import com.github.marioatwired.jasmine.audio.QueuedTrack;
 import com.github.marioatwired.jasmine.audio.RequestMetadata;
 import com.github.marioatwired.jasmine.queue.PlaybackHistory;
+import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.JDA;
@@ -35,13 +36,16 @@ import java.util.List;
  */
 public class HistoryService
 {
-    private final Bot bot;
-    private final MusicService musicService;
+    public static final String HISTORY_DISABLED_MESSAGE =
+            "Playback history is disabled by config (playback.maxHistorySize = 0).";
 
-    public HistoryService(Bot bot, MusicService musicService)
+    private final Bot bot;
+    private final TrackEnqueuer trackEnqueuer;
+
+    public HistoryService(Bot bot, TrackEnqueuer trackEnqueuer)
     {
         this.bot = bot;
-        this.musicService = musicService;
+        this.trackEnqueuer = trackEnqueuer;
     }
 
     private AudioHandler getHandler(Guild guild)
@@ -49,7 +53,7 @@ public class HistoryService
         return (AudioHandler) guild.getAudioManager().getSendingHandler();
     }
 
-    public MusicService.HistoryInfo getHistoryInfo(Guild guild, JDA jda)
+    public HistoryInfo getHistoryInfo(Guild guild, JDA jda)
     {
         AudioHandler handler = getHandler(guild);
         if (handler == null)
@@ -69,11 +73,11 @@ public class HistoryService
             trackStrings[i] = list.get(i).toString();
         }
 
-        return new MusicService.HistoryInfo(trackStrings, totalDuration, maxSize, disabled);
+        return new HistoryInfo(trackStrings, totalDuration, maxSize, disabled);
     }
 
     public void queueFromHistory(Guild guild, Member member, int historyPosition,
-                                 TextChannel channel, MusicService.OutputAdapter output)
+                                 TextChannel channel, OutputAdapter output)
     {
         AudioHandler handler = getHandler(guild);
         if (handler == null)
@@ -103,9 +107,9 @@ public class HistoryService
         handler.getQueue().removeFromHistoryAt(index);
 
         AudioTrack track = qt.getTrack().makeClone();
-        if (musicService.isTooLong(track))
+        if (trackEnqueuer.isTooLong(track))
         {
-            output.replyError(musicService.formatTooLongError(track));
+            output.replyError(trackEnqueuer.formatTooLongError(track));
             return;
         }
 
@@ -116,11 +120,11 @@ public class HistoryService
         handler.setLastReason(member.getUser().getName() + " added from history.");
         int position = handler.addTrack(newQt) + 1;
         String title = FormatUtil.getTrackTitle(track);
-        output.replySuccess(musicService.formatTrackAddedMessage(title, track.getDuration(), position));
+        output.replySuccess(trackEnqueuer.formatTrackAddedMessage(title, track.getDuration(), position));
     }
 
     public void queueAllFromHistory(Guild guild, Member member, TextChannel channel,
-                                    MusicService.OutputAdapter output)
+                                    OutputAdapter output)
     {
         AudioHandler handler = getHandler(guild);
         if (handler == null)
@@ -151,7 +155,7 @@ public class HistoryService
         for (QueuedTrack qt : historySnapshot)
         {
             AudioTrack track = qt.getTrack().makeClone();
-            if (musicService.isTooLong(track))
+            if (trackEnqueuer.isTooLong(track))
             {
                 skipped++;
                 continue;
@@ -183,7 +187,7 @@ public class HistoryService
     }
 
     public void playFromHistoryNow(Guild guild, Member member, int historyPosition,
-                                   TextChannel channel, MusicService.OutputAdapter output)
+                                   TextChannel channel, OutputAdapter output)
     {
         AudioHandler handler = getHandler(guild);
         if (handler == null)
@@ -213,9 +217,9 @@ public class HistoryService
         handler.getQueue().removeFromHistoryAt(index);
 
         AudioTrack track = qt.getTrack().makeClone();
-        if (musicService.isTooLong(track))
+        if (trackEnqueuer.isTooLong(track))
         {
-            output.replyError(musicService.formatTooLongError(track));
+            output.replyError(trackEnqueuer.formatTooLongError(track));
             return;
         }
 
@@ -233,11 +237,11 @@ public class HistoryService
         output.replySuccess("Now playing **" + FormatUtil.filter(title) + "**");
     }
 
-    private boolean requireHistoryEnabled(PlaybackHistory<QueuedTrack> history, MusicService.OutputAdapter output)
+    private boolean requireHistoryEnabled(PlaybackHistory<QueuedTrack> history, OutputAdapter output)
     {
         if (history.getMaxSize() == 0)
         {
-            output.replyError(MusicService.HISTORY_DISABLED_MESSAGE);
+            output.replyError(HISTORY_DISABLED_MESSAGE);
             return false;
         }
         return true;

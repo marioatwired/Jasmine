@@ -15,8 +15,6 @@
  */
 package com.github.marioatwired.jasmine.commands.v1.music;
 
-import com.jagrosh.jdautilities.command.CommandEvent;
-import com.jagrosh.jdautilities.menu.OrderedMenu;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.audio.AudioHandler;
 import com.github.marioatwired.jasmine.audio.QueuedTrack;
@@ -24,14 +22,20 @@ import com.github.marioatwired.jasmine.audio.RequestMetadata;
 import com.github.marioatwired.jasmine.commands.v1.MusicCommand;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
 import com.github.marioatwired.jasmine.utils.TimeUtil;
+import com.jagrosh.jdautilities.command.CommandEvent;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
-import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -41,7 +45,6 @@ import java.util.concurrent.TimeUnit;
 public class SearchCmd extends MusicCommand 
 {
     protected String searchPrefix = "ytsearch:";
-    private final OrderedMenu.Builder builder;
     private final String searchingEmoji;
     
     public SearchCmd(Bot bot)
@@ -55,12 +58,6 @@ public class SearchCmd extends MusicCommand
         this.beListening = true;
         this.bePlaying = false;
         this.botPermissions = new Permission[]{Permission.MESSAGE_EMBED_LINKS};
-        builder = new OrderedMenu.Builder()
-                .allowTextInput(true)
-                .useNumbers()
-                .useCancelButton(true)
-                .setEventWaiter(bot.getWaiter())
-                .setTimeout(1, TimeUnit.MINUTES);
     }
     @Override
     public void doCommand(CommandEvent event) 
@@ -108,35 +105,93 @@ public class SearchCmd extends MusicCommand
         @Override
         public void playlistLoaded(AudioPlaylist playlist)
         {
-            builder.setColor(event.getSelfMember().getColor())
-                    .setText(FormatUtil.filter(event.getClient().getSuccess()+" Search results for `"+event.getArgs()+"`:"))
-                    .setChoices(new String[0])
-                    .setSelection((msg,i) -> 
-                    {
-                        AudioTrack track = playlist.getTracks().get(i-1);
-                        String trackTitle = FormatUtil.getTrackTitle(track);
-                        if(bot.getConfig().isTooLong(track))
-                        {
-                            event.replyWarning("This track (**"+trackTitle+"**) is longer than the allowed maximum: `"
-                                    + TimeUtil.formatTime(track.getDuration())+"` > `"+bot.getConfig().getMaxTime()+"`");
-                            return;
-                        }
-                        AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
-                        int pos = handler.addTrack(new QueuedTrack(track, RequestMetadata.fromResultHandler(track, event)))+1;
-                        event.replySuccess("Added **" + FormatUtil.filter(trackTitle)
-                                + "** (`" + TimeUtil.formatTime(track.getDuration()) + "`) " + (pos==0 ? "to begin playing" 
-                                    : " to the queue at position "+pos));
-                    })
-                    .setCancel((msg) -> {})
-                    .setUsers(event.getAuthor())
-                    ;
-            for(int i=0; i<4 && i<playlist.getTracks().size(); i++)
+            List<AudioTrack> tracks = playlist.getTracks();
+            if (tracks.isEmpty())
             {
-                AudioTrack track = playlist.getTracks().get(i);
-                String trackTitle = FormatUtil.getTrackTitle(track);
-                builder.addChoices("`["+ TimeUtil.formatTime(track.getDuration())+"]` [**"+FormatUtil.filter(trackTitle == null ? "" : trackTitle)+"**]("+track.getInfo().uri+")");
+                m.editMessage(FormatUtil.filter(event.getClient().getWarning()
+                        + " No results found for `" + event.getArgs() + "`.")).queue();
+                return;
             }
-            builder.build().display(m);
+
+            int limit = Math.min(4, tracks.size());
+            StringSelectMenu.Builder menu = StringSelectMenu.create("search_select_" + event.getAuthor().getId())
+                    .setPlaceholder("Select a track")
+                    .setMinValues(1)
+                    .setMaxValues(1);
+            StringBuilder description = new StringBuilder();
+            for (int i = 0; i < limit; i++)
+            {
+                AudioTrack track = tracks.get(i);
+                String trackTitle = FormatUtil.getTrackTitle(track);
+                String label = trackTitle == null ? "" : trackTitle;
+                if (label.length() > 80)
+                {
+                    label = label.substring(0, 77) + "...";
+                }
+                menu.addOption(label, String.valueOf(i),
+                        "Duration: " + TimeUtil.formatTime(track.getDuration()));
+                description.append("`").append(i + 1).append(".` ")
+                        .append("[**").append(FormatUtil.filter(label)).append("**](")
+                        .append(track.getInfo().uri).append(") `[")
+                        .append(TimeUtil.formatTime(track.getDuration())).append("]`\n");
+            }
+
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setTitle("Search results for `" + event.getArgs() + "`")
+                    .setDescription(description.toString())
+                    .setColor(event.getSelfMember().getColors().getPrimary());
+            m.editMessageEmbeds(embed.build())
+                    .setContent("")
+                    .setComponents(ActionRow.of(menu.build()))
+                    .queue(msg -> bot.getWaiter().waitForEvent(
+                            StringSelectInteractionEvent.class,
+                            e -> e.getMessageId().equals(msg.getId())
+                                    && e.getUser().getIdLong() == event.getAuthor().getIdLong(),
+                            e ->
+                            {
+                                int selected;
+                                try
+                                {
+                                    selected = Integer.parseInt(e.getValues().get(0));
+                                }
+                                catch (NumberFormatException ex)
+                                {
+                                    e.editMessage(event.getClient().getError() + " Invalid selection.")
+                                            .setEmbeds().setComponents().queue();
+                                    return;
+                                }
+
+                                if (selected < 0 || selected >= tracks.size())
+                                {
+                                    e.editMessage(event.getClient().getError() + " Invalid selection.")
+                                            .setEmbeds().setComponents().queue();
+                                    return;
+                                }
+
+                                AudioTrack track = tracks.get(selected);
+                                String trackTitle = FormatUtil.getTrackTitle(track);
+                                if (bot.getConfig().isTooLong(track))
+                                {
+                                    e.editMessage(FormatUtil.filter(event.getClient().getWarning()
+                                            + " This track (**" + trackTitle + "**) is longer than the allowed maximum: `"
+                                            + TimeUtil.formatTime(track.getDuration()) + "` > `"
+                                            + bot.getConfig().getMaxTime() + "`"))
+                                            .setEmbeds().setComponents().queue();
+                                    return;
+                                }
+
+                                AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+                                int pos = handler.addTrack(new QueuedTrack(track,
+                                        RequestMetadata.fromResultHandler(track, event))) + 1;
+                                e.editMessage(FormatUtil.filter(event.getClient().getSuccess()
+                                        + " Added **" + FormatUtil.filter(trackTitle) + "** (`"
+                                        + TimeUtil.formatTime(track.getDuration()) + "`) "
+                                        + (pos == 0 ? "to begin playing" : " to the queue at position " + pos)))
+                                        .setEmbeds().setComponents().queue();
+                            },
+                            1, TimeUnit.MINUTES,
+                            () -> m.editMessage("Search timed out.")
+                                    .setEmbeds().setComponents().queue()));
         }
 
         @Override

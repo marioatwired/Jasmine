@@ -16,43 +16,56 @@
 package com.github.marioatwired.jasmine.service;
 
 import com.github.marioatwired.jasmine.Bot;
-import com.github.marioatwired.jasmine.audio.AudioHandler;
-import com.github.marioatwired.jasmine.settings.QueueType;
+import com.github.marioatwired.jasmine.service.dto.ForceSkipResult;
+import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
+import com.github.marioatwired.jasmine.service.dto.NowPlayingInfo;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDetailsInfo;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDraftContext;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDraftMutationResult;
+import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
+import com.github.marioatwired.jasmine.service.dto.PlaylistPreviewWithTracks;
+import com.github.marioatwired.jasmine.service.dto.PlaylistTracksPageInfo;
+import com.github.marioatwired.jasmine.service.dto.QueueInfo;
+import com.github.marioatwired.jasmine.service.dto.TrackAddResult;
+import com.github.marioatwired.jasmine.service.dto.VolumeResult;
 import com.github.marioatwired.jasmine.settings.RepeatMode;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Facade for music operations. Playback and queue handling live in {@link PlayerService};
- * playlists, history, and now-playing formatting have their own services.
+ * Facade for music operations. Playback control lives in {@link PlayerService};
+ * queue mutation lives in {@link QueueService}; playlists, history, and
+ * now-playing formatting have their own services.
  */
 public class MusicService
 {
-    public static final String HISTORY_DISABLED_MESSAGE =
-            "Playback history is disabled by config (playback.maxHistorySize = 0).";
-
     private static final Logger LOG = LoggerFactory.getLogger(MusicService.class);
 
     private final PlayerService playerService;
+    private final QueueService queueService;
     private final NowPlayingService nowPlayingService;
     private final HistoryService historyService;
     private final PlaylistService playlistService;
 
     public MusicService(Bot bot)
     {
-        this.playerService = new PlayerService(bot, this);
+        this(bot, new PlayerService(bot));
+    }
+
+    public MusicService(Bot bot, PlayerService playerService)
+    {
+        this.playerService = playerService;
+        this.queueService = new QueueService(bot);
         this.nowPlayingService = new NowPlayingService(bot);
-        this.historyService = new HistoryService(bot, this);
-        this.playlistService = new PlaylistService(bot, this);
+        this.historyService = new HistoryService(bot, playerService);
+        this.playlistService = new PlaylistService(bot, playerService);
         LOG.info("MusicService initialized");
     }
 
@@ -144,7 +157,7 @@ public class MusicService
 
     public void shuffle(Guild guild, Member member, int startIndex, OutputAdapter output)
     {
-        playerService.shuffle(guild, member, startIndex, output);
+        queueService.shuffle(guild, member, startIndex, output);
     }
 
     /**
@@ -156,7 +169,7 @@ public class MusicService
      */
     public int shuffleUserTracks(Guild guild, long userId)
     {
-        return playerService.shuffleUserTracks(guild, userId);
+        return queueService.shuffleUserTracks(guild, userId);
     }
 
     public void cycleRepeatMode(Guild guild, Member member, OutputAdapter output)
@@ -212,21 +225,6 @@ public class MusicService
     public VolumeResult setVolume(Guild guild, int volume)
     {
         return playerService.setVolume(guild, volume);
-    }
-
-    /**
-     * Result of a volume change operation.
-     */
-    public static class VolumeResult
-    {
-        public final int oldVolume;
-        public final int newVolume;
-
-        public VolumeResult(int oldVolume, int newVolume)
-        {
-            this.oldVolume = oldVolume;
-            this.newVolume = newVolume;
-        }
     }
 
     public void stop(Guild guild, Member member, OutputAdapter output)
@@ -290,21 +288,6 @@ public class MusicService
         return playerService.forceSkip(guild);
     }
 
-    /**
-     * Result of a force skip operation.
-     */
-    public static class ForceSkipResult
-    {
-        public final String trackTitle;
-        public final String requesterInfo;
-
-        public ForceSkipResult(String trackTitle, String requesterInfo)
-        {
-            this.trackTitle = trackTitle;
-            this.requesterInfo = requesterInfo;
-        }
-    }
-
     public void skipWithVote(Guild guild, Member member, int listeners, OutputAdapter output)
     {
         playerService.skipWithVote(guild, member, listeners, output);
@@ -324,12 +307,12 @@ public class MusicService
 
     public void removeTrack(Guild guild, Member member, int position, OutputAdapter output)
     {
-        playerService.removeTrack(guild, member, position, output);
+        queueService.removeTrack(guild, member, position, output);
     }
 
     public void removeAllTracks(Guild guild, Member member, OutputAdapter output)
     {
-        playerService.removeAllTracks(guild, member, output);
+        queueService.removeAllTracks(guild, member, output);
     }
 
     /**
@@ -341,7 +324,7 @@ public class MusicService
      */
     public int removeAllTracksByUser(Guild guild, long userId)
     {
-        return playerService.removeAllTracksByUser(guild, userId);
+        return queueService.removeAllTracksByUser(guild, userId);
     }
 
     /**
@@ -352,12 +335,12 @@ public class MusicService
      */
     public boolean isQueueEmpty(Guild guild)
     {
-        return playerService.isQueueEmpty(guild);
+        return queueService.isQueueEmpty(guild);
     }
 
     public void moveTrack(Guild guild, Member member, int from, int to, OutputAdapter output)
     {
-        playerService.moveTrack(guild, member, from, to, output);
+        queueService.moveTrack(guild, member, from, to, output);
     }
 
     /**
@@ -371,7 +354,7 @@ public class MusicService
      */
     public void playNext(Guild guild, Member member, int position, OutputAdapter output)
     {
-        playerService.playNext(guild, member, position, output);
+        queueService.playNext(guild, member, position, output);
     }
 
     /**
@@ -399,7 +382,7 @@ public class MusicService
      */
     public String moveTrackPosition(Guild guild, int from, int to)
     {
-        return playerService.moveTrackPosition(guild, from, to);
+        return queueService.moveTrackPosition(guild, from, to);
     }
 
     /**
@@ -411,7 +394,7 @@ public class MusicService
      */
     public boolean isValidQueuePosition(Guild guild, int position)
     {
-        return playerService.isValidQueuePosition(guild, position);
+        return queueService.isValidQueuePosition(guild, position);
     }
 
     public void skipTo(Guild guild, Member member, int position, OutputAdapter output)
@@ -440,7 +423,7 @@ public class MusicService
      */
     public int getQueueSize(Guild guild)
     {
-        return playerService.getQueueSize(guild);
+        return queueService.getQueueSize(guild);
     }
 
     // ========== Now Playing ==========
@@ -455,25 +438,6 @@ public class MusicService
     public NowPlayingInfo getNowPlayingInfo(Guild guild, JDA jda)
     {
         return nowPlayingService.getNowPlayingInfo(guild, jda);
-    }
-
-    /**
-     * Data class containing now playing information.
-     */
-    public static class NowPlayingInfo
-    {
-        public final net.dv8tion.jda.api.utils.messages.MessageCreateData nowPlayingMessage;
-        public final net.dv8tion.jda.api.utils.messages.MessageCreateData noMusicMessage;
-        public final boolean isPlaying;
-
-        public NowPlayingInfo(net.dv8tion.jda.api.utils.messages.MessageCreateData nowPlayingMessage,
-                              net.dv8tion.jda.api.utils.messages.MessageCreateData noMusicMessage,
-                              boolean isPlaying)
-        {
-            this.nowPlayingMessage = nowPlayingMessage;
-            this.noMusicMessage = noMusicMessage;
-            this.isPlaying = isPlaying;
-        }
     }
 
     // ========== Queue Info ==========
@@ -712,240 +676,4 @@ public class MusicService
         playlistService.saveHistoryAsPlaylist(guild, member, playlistName, output);
     }
 
-    // ========== Inner Classes ==========
-
-    /**
-     * Result of adding a track to the queue.
-     */
-    public static class TrackAddResult
-    {
-        public final int position;
-        public final String formattedMessage;
-        public final String trackTitle;
-
-        public TrackAddResult(int position, String formattedMessage, String trackTitle)
-        {
-            this.position = position;
-            this.formattedMessage = formattedMessage;
-            this.trackTitle = trackTitle;
-        }
-    }
-
-    /**
-     * Data class containing queue information for display.
-     */
-    public static class QueueInfo
-    {
-        public final String[] tracks;
-        public final long totalDuration;
-        public final String nowPlayingTitle;
-        public final String statusEmoji;
-        public final RepeatMode repeatMode;
-        public final QueueType queueType;
-        public final Object nowPlayingMessage;
-        public final Object noMusicMessage;
-
-        public QueueInfo(String[] tracks, long totalDuration, String nowPlayingTitle, String statusEmoji,
-                         RepeatMode repeatMode, QueueType queueType, Object nowPlayingMessage, Object noMusicMessage)
-        {
-            this.tracks = tracks;
-            this.totalDuration = totalDuration;
-            this.nowPlayingTitle = nowPlayingTitle;
-            this.statusEmoji = statusEmoji;
-            this.repeatMode = repeatMode;
-            this.queueType = queueType;
-            this.nowPlayingMessage = nowPlayingMessage;
-            this.noMusicMessage = noMusicMessage;
-        }
-
-        public boolean isEmpty()
-        {
-            return tracks.length == 0;
-        }
-    }
-
-    /**
-     * Data class containing playback history information for display.
-     */
-    public static class HistoryInfo
-    {
-        public final String[] tracks;
-        public final long totalDuration;
-        public final int maxSize;
-        public final boolean disabled;
-
-        public HistoryInfo(String[] tracks, long totalDuration, int maxSize)
-        {
-            this(tracks, totalDuration, maxSize, maxSize == 0);
-        }
-
-        public HistoryInfo(String[] tracks, long totalDuration, int maxSize, boolean disabled)
-        {
-            this.tracks = tracks;
-            this.totalDuration = totalDuration;
-            this.maxSize = maxSize;
-            this.disabled = disabled;
-        }
-
-        public boolean isEmpty()
-        {
-            return tracks.length == 0;
-        }
-
-        public boolean isDisabled()
-        {
-            return disabled;
-        }
-    }
-
-    /**
-     * Result for listing playlists where storage errors are explicit.
-     */
-    public static class PlaylistNamesInfo
-    {
-        public final List<String> names;
-        public final String errorMessage;
-
-        private PlaylistNamesInfo(List<String> names, String errorMessage)
-        {
-            this.names = names;
-            this.errorMessage = errorMessage;
-        }
-
-        public static PlaylistNamesInfo success(List<String> names)
-        {
-            return new PlaylistNamesInfo(names, null);
-        }
-
-        public static PlaylistNamesInfo error(String errorMessage)
-        {
-            return new PlaylistNamesInfo(List.of(), errorMessage);
-        }
-
-        public boolean hasError()
-        {
-            return errorMessage != null;
-        }
-    }
-
-    /**
-     * Metadata used for playlist details previews in interactions.
-     */
-    public static class PlaylistDetailsInfo
-    {
-        public final String playlistName;
-        public final int totalItems;
-        public final List<String> previewItems;
-        public final boolean hasMore;
-
-        public PlaylistDetailsInfo(String playlistName, int totalItems, List<String> previewItems, boolean hasMore)
-        {
-            this.playlistName = playlistName;
-            this.totalItems = totalItems;
-            this.previewItems = previewItems;
-            this.hasMore = hasMore;
-        }
-    }
-
-    /**
-     * Result of loading playlist preview with resolved track lines (duration + title, same style as Queue/History).
-     */
-    public static class PlaylistPreviewWithTracks
-    {
-        public final String playlistName;
-        public final int totalItems;
-        public final boolean hasMore;
-        public final List<String> formattedLines;
-
-        public PlaylistPreviewWithTracks(String playlistName, int totalItems, boolean hasMore, List<String> formattedLines)
-        {
-            this.playlistName = playlistName;
-            this.totalItems = totalItems;
-            this.hasMore = hasMore;
-            this.formattedLines = formattedLines;
-        }
-    }
-
-    /**
-     * Result for one page of playlist tracks resolved to formatted lines.
-     */
-    public static class PlaylistTracksPageInfo
-    {
-        public final String playlistName;
-        public final int totalItems;
-        public final int startIndex;
-        public final boolean hasMore;
-        public final boolean dirty;
-        public final List<String> formattedLines;
-
-        public PlaylistTracksPageInfo(String playlistName, int totalItems, int startIndex,
-                                      boolean hasMore, boolean dirty, List<String> formattedLines)
-        {
-            this.playlistName = playlistName;
-            this.totalItems = totalItems;
-            this.startIndex = startIndex;
-            this.hasMore = hasMore;
-            this.dirty = dirty;
-            this.formattedLines = formattedLines;
-        }
-    }
-
-    /**
-     * Identifies a playlist details draft session for one interaction message and user.
-     */
-    public record PlaylistDraftContext(long guildId, long channelId, long messageId, long userId, String playlistName)
-    {
-    }
-
-    public static class PlaylistDraftMutationResult
-    {
-        public final boolean success;
-        public final String errorMessage;
-        public final int totalItems;
-        public final boolean dirty;
-        public final int revision;
-
-        private PlaylistDraftMutationResult(boolean success, String errorMessage, int totalItems,
-                                            boolean dirty, int revision)
-        {
-            this.success = success;
-            this.errorMessage = errorMessage;
-            this.totalItems = totalItems;
-            this.dirty = dirty;
-            this.revision = revision;
-        }
-
-        public static PlaylistDraftMutationResult success(int totalItems, boolean dirty, int revision)
-        {
-            return new PlaylistDraftMutationResult(true, null, totalItems, dirty, revision);
-        }
-
-        public static PlaylistDraftMutationResult error(String errorMessage)
-        {
-            return new PlaylistDraftMutationResult(false, errorMessage, 0, false, 0);
-        }
-    }
-
-    /**
-     * Adapter interface for abstracting output operations.
-     * <p>
-     * This interface allows services to be command-type agnostic - the same service
-     * methods work for text commands, slash commands, and button interactions.
-     * Each command type provides its own implementation.
-     *
-     * @see com.github.marioatwired.jasmine.commands.BaseOutputAdapter
-     * @see com.github.marioatwired.jasmine.commands.v1.TextOutputAdapters
-     * @see com.github.marioatwired.jasmine.commands.v2.SlashOutputAdapters
-     */
-    public interface OutputAdapter
-    {
-        void replySuccess(String content);
-        void replyError(String content);
-        void replyWarning(String content);
-        void editMessage(String content);
-        void editMessage(String content, Consumer<Message> onSuccess);
-        void editNowPlaying(AudioHandler handler);
-        void editNoMusic(AudioHandler handler);
-        void onShowHelp();
-    }
 }

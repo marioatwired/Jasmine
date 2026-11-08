@@ -18,6 +18,8 @@ package com.github.marioatwired.jasmine.service;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.audio.AudioHandler;
 import com.github.marioatwired.jasmine.audio.QueuedTrack;
+import com.github.marioatwired.jasmine.service.dto.NowPlayingInfo;
+import com.github.marioatwired.jasmine.service.dto.QueueInfo;
 import com.github.marioatwired.jasmine.settings.Settings;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
 import com.github.marioatwired.jasmine.utils.TimeUtil;
@@ -48,7 +50,7 @@ public class NowPlayingService
         return bot.getSettingsManager().getSettings(guild);
     }
 
-    public MusicService.NowPlayingInfo getNowPlayingInfo(Guild guild, JDA jda)
+    public NowPlayingInfo getNowPlayingInfo(Guild guild, JDA jda)
     {
         AudioHandler handler = getHandler(guild);
         if (handler == null)
@@ -56,14 +58,14 @@ public class NowPlayingService
             return null;
         }
 
-        return new MusicService.NowPlayingInfo(
+        return new NowPlayingInfo(
                 handler.getNowPlaying(jda),
                 handler.getNoMusicPlaying(jda),
                 handler.getPlayer().getPlayingTrack() != null
         );
     }
 
-    public MusicService.QueueInfo getQueueInfo(Guild guild, JDA jda)
+    public QueueInfo getQueueInfo(Guild guild, JDA jda)
     {
         AudioHandler handler = getHandler(guild);
         if (handler == null)
@@ -89,7 +91,7 @@ public class NowPlayingService
             nowPlayingTitle = FormatUtil.getTrackTitle(handler.getPlayer().getPlayingTrack());
         }
 
-        return new MusicService.QueueInfo(
+        return new QueueInfo(
                 trackStrings,
                 totalDuration,
                 nowPlayingTitle,
@@ -101,7 +103,7 @@ public class NowPlayingService
         );
     }
 
-    public String formatQueueTitle(MusicService.QueueInfo info, String successEmoji)
+    public String formatQueueTitle(QueueInfo info, String successEmoji)
     {
         StringBuilder sb = new StringBuilder();
         if (info.nowPlayingTitle != null)

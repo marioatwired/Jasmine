@@ -24,6 +24,7 @@ import net.dv8tion.jda.api.entities.Activity;
  *
  * @author John Grosh <john.a.grosh@gmail.com>
  */
+@SuppressWarnings("deprecation") // JDA-Chewtils has no DM context equivalent for text commands yet.
 public class SetgameCmd extends OwnerCommand
 {
     public SetgameCmd(Bot bot)

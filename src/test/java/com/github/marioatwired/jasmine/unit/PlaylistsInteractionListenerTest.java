@@ -17,6 +17,11 @@ package com.github.marioatwired.jasmine.unit;
 
 import com.github.marioatwired.jasmine.listener.PlaylistsInteractionListener;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDetailsInfo;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDraftContext;
+import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
+import com.github.marioatwired.jasmine.service.dto.PlaylistTracksPageInfo;
 import com.github.marioatwired.jasmine.testutil.listener.ListenerTestFixture;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
@@ -28,8 +33,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -82,7 +87,7 @@ class PlaylistsInteractionListenerTest
                 .withMemberInVoiceChannel();
 
         when(fixture.getMusicService().getAvailablePlaylistNames())
-                .thenReturn(MusicService.PlaylistNamesInfo.success(List.of("favorite")));
+                .thenReturn(PlaylistNamesInfo.success(List.of("favorite")));
 
         MessageChannelUnion channelUnion = mock(MessageChannelUnion.class);
         when(channelUnion.asTextChannel()).thenReturn(fixture.getTextChannel());
@@ -100,7 +105,7 @@ class PlaylistsInteractionListenerTest
                 eq(fixture.getMember()),
                 eq("favorite"),
                 eq(fixture.getTextChannel()),
-                any(MusicService.OutputAdapter.class)
+                any(OutputAdapter.class)
         );
     }
 
@@ -109,7 +114,7 @@ class PlaylistsInteractionListenerTest
     void onButtonInteraction_selectOutsidePage_repliesError()
     {
         fixture.withButtonId("playlists_select11_1_0_" + fixture.getUser().getIdLong());
-        when(fixture.getMusicService().getAvailablePlaylistNames()).thenReturn(MusicService.PlaylistNamesInfo.success(List.of(
+        when(fixture.getMusicService().getAvailablePlaylistNames()).thenReturn(PlaylistNamesInfo.success(List.of(
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"
         )));
 
@@ -126,9 +131,9 @@ class PlaylistsInteractionListenerTest
         fixture.withButtonId("playlistdetails_1_1_queueall_1_0_" + fixture.getUser().getIdLong())
                 .withMemberInVoiceChannel();
         when(fixture.getMusicService().getAvailablePlaylistNames())
-                .thenReturn(MusicService.PlaylistNamesInfo.success(List.of("favorite")));
+                .thenReturn(PlaylistNamesInfo.success(List.of("favorite")));
         when(fixture.getMusicService().getPlaylistDetails("favorite"))
-                .thenReturn(new MusicService.PlaylistDetailsInfo("favorite", 3, List.of(), false));
+                .thenReturn(new PlaylistDetailsInfo("favorite", 3, List.of(), false));
         when(fixture.getMusicService().getPlaylistTrackCount(any())).thenReturn(3);
 
         MessageChannelUnion channelUnion = mock(MessageChannelUnion.class);
@@ -149,7 +154,7 @@ class PlaylistsInteractionListenerTest
                 eq(fixture.getMember()),
                 eq("favorite"),
                 eq(fixture.getTextChannel()),
-                any(MusicService.OutputAdapter.class)
+                any(OutputAdapter.class)
         );
     }
 
@@ -159,9 +164,9 @@ class PlaylistsInteractionListenerTest
     {
         fixture.withButtonId("playlistdetails_1_1_remove_1_1_" + fixture.getUser().getIdLong());
         when(fixture.getMusicService().getAvailablePlaylistNames())
-                .thenReturn(MusicService.PlaylistNamesInfo.success(List.of("favorite")));
+                .thenReturn(PlaylistNamesInfo.success(List.of("favorite")));
         when(fixture.getMusicService().getPlaylistDetails("favorite"))
-                .thenReturn(new MusicService.PlaylistDetailsInfo("favorite", 3, List.of(), false));
+                .thenReturn(new PlaylistDetailsInfo("favorite", 3, List.of(), false));
         when(fixture.getMusicService().getPlaylistTrackCount(any())).thenReturn(3);
         when(fixture.getMusicService().canEditPlaylistEntries(eq(fixture.getGuild()), eq(fixture.getMember())))
                 .thenReturn(false);
@@ -183,21 +188,21 @@ class PlaylistsInteractionListenerTest
     {
         fixture.withButtonId("playlistdetails_1_1_unselect_1_4_" + fixture.getUser().getIdLong());
         when(fixture.getMusicService().getAvailablePlaylistNames())
-                .thenReturn(MusicService.PlaylistNamesInfo.success(List.of("favorite")));
+                .thenReturn(PlaylistNamesInfo.success(List.of("favorite")));
         when(fixture.getMusicService().getPlaylistDetails("favorite"))
-                .thenReturn(new MusicService.PlaylistDetailsInfo("favorite", 4, List.of(), false));
+                .thenReturn(new PlaylistDetailsInfo("favorite", 4, List.of(), false));
         when(fixture.getMusicService().getPlaylistTrackCount(any())).thenReturn(4);
         when(fixture.getMusicService().canEditPlaylistEntries(eq(fixture.getGuild()), eq(fixture.getMember())))
                 .thenReturn(true);
-        MusicService.PlaylistDraftContext draftContext =
-                new MusicService.PlaylistDraftContext(123456789L, 123L, 456L, fixture.getUser().getIdLong(), "favorite");
+        PlaylistDraftContext draftContext =
+                new PlaylistDraftContext(123456789L, 123L, 456L, fixture.getUser().getIdLong(), "favorite");
         when(fixture.getMusicService().buildPlaylistDraftContext(anyLong(), anyLong(), anyLong(), anyLong(), anyString()))
                 .thenReturn(draftContext);
         doAnswer(invocation ->
         {
-            java.util.function.Consumer<MusicService.PlaylistTracksPageInfo> callback =
+            java.util.function.Consumer<PlaylistTracksPageInfo> callback =
                     invocation.getArgument(3);
-            callback.accept(new MusicService.PlaylistTracksPageInfo(
+            callback.accept(new PlaylistTracksPageInfo(
                     "favorite", 4, 0, false, false, List.of(
                     "`[03:57]` [**spinnin**](https://example/1)",
                     "`[05:57]` [**daylight**](https://example/2)",
@@ -205,7 +210,7 @@ class PlaylistsInteractionListenerTest
                     "`[06:40]` [**flame**](https://example/4)"
             )));
             return null;
-        }).when(fixture.getMusicService()).loadPlaylistPageWithTracks(any(MusicService.PlaylistDraftContext.class), anyInt(), anyInt(), any());
+        }).when(fixture.getMusicService()).loadPlaylistPageWithTracks(any(PlaylistDraftContext.class), anyInt(), anyInt(), any());
 
         MessageChannelUnion channelUnion = mock(MessageChannelUnion.class);
         when(channelUnion.getIdLong()).thenReturn(123L);
@@ -220,7 +225,7 @@ class PlaylistsInteractionListenerTest
         listener.onButtonInteraction(fixture.getButtonInteractionEvent());
 
         verify(fixture.getButtonInteractionEvent(), never()).reply(argThat((String s) -> s.contains("No track selected")));
-        verify(fixture.getMusicService()).loadPlaylistPageWithTracks(any(MusicService.PlaylistDraftContext.class), anyInt(), anyInt(), any());
+        verify(fixture.getMusicService()).loadPlaylistPageWithTracks(any(PlaylistDraftContext.class), anyInt(), anyInt(), any());
     }
 
     @Test
@@ -229,21 +234,21 @@ class PlaylistsInteractionListenerTest
     {
         fixture.withButtonId("playlistdetails_1_1_cancelmove_1_2_" + fixture.getUser().getIdLong());
         when(fixture.getMusicService().getAvailablePlaylistNames())
-                .thenReturn(MusicService.PlaylistNamesInfo.success(List.of("favorite")));
+                .thenReturn(PlaylistNamesInfo.success(List.of("favorite")));
         when(fixture.getMusicService().getPlaylistDetails("favorite"))
-                .thenReturn(new MusicService.PlaylistDetailsInfo("favorite", 4, List.of(), false));
+                .thenReturn(new PlaylistDetailsInfo("favorite", 4, List.of(), false));
         when(fixture.getMusicService().getPlaylistTrackCount(any())).thenReturn(4);
         when(fixture.getMusicService().canEditPlaylistEntries(eq(fixture.getGuild()), eq(fixture.getMember())))
                 .thenReturn(true);
-        MusicService.PlaylistDraftContext draftContext =
-                new MusicService.PlaylistDraftContext(123456789L, 123L, 456L, fixture.getUser().getIdLong(), "favorite");
+        PlaylistDraftContext draftContext =
+                new PlaylistDraftContext(123456789L, 123L, 456L, fixture.getUser().getIdLong(), "favorite");
         when(fixture.getMusicService().buildPlaylistDraftContext(anyLong(), anyLong(), anyLong(), anyLong(), anyString()))
                 .thenReturn(draftContext);
         doAnswer(invocation ->
         {
-            java.util.function.Consumer<MusicService.PlaylistTracksPageInfo> callback =
+            java.util.function.Consumer<PlaylistTracksPageInfo> callback =
                     invocation.getArgument(3);
-            callback.accept(new MusicService.PlaylistTracksPageInfo(
+            callback.accept(new PlaylistTracksPageInfo(
                     "favorite", 4, 0, false, false, List.of(
                     "`[03:57]` [**spinnin**](https://example/1)",
                     "`[05:57]` [**daylight**](https://example/2)",
@@ -251,7 +256,7 @@ class PlaylistsInteractionListenerTest
                     "`[06:40]` [**flame**](https://example/4)"
             )));
             return null;
-        }).when(fixture.getMusicService()).loadPlaylistPageWithTracks(any(MusicService.PlaylistDraftContext.class), anyInt(), anyInt(), any());
+        }).when(fixture.getMusicService()).loadPlaylistPageWithTracks(any(PlaylistDraftContext.class), anyInt(), anyInt(), any());
 
         MessageChannelUnion channelUnion = mock(MessageChannelUnion.class);
         when(channelUnion.getIdLong()).thenReturn(123L);
@@ -265,7 +270,7 @@ class PlaylistsInteractionListenerTest
 
         listener.onButtonInteraction(fixture.getButtonInteractionEvent());
 
-        verify(fixture.getMusicService()).loadPlaylistPageWithTracks(any(MusicService.PlaylistDraftContext.class), anyInt(), anyInt(), any());
+        verify(fixture.getMusicService()).loadPlaylistPageWithTracks(any(PlaylistDraftContext.class), anyInt(), anyInt(), any());
     }
 
     @Test
@@ -274,9 +279,9 @@ class PlaylistsInteractionListenerTest
     {
         fixture.withButtonId("playlistdetails_back_1_1_" + fixture.getUser().getIdLong());
         when(fixture.getMusicService().getAvailablePlaylistNames())
-                .thenReturn(MusicService.PlaylistNamesInfo.success(List.of("favorite")));
-        MusicService.PlaylistDraftContext draftContext =
-                new MusicService.PlaylistDraftContext(123456789L, 123L, 456L, fixture.getUser().getIdLong(), "favorite");
+                .thenReturn(PlaylistNamesInfo.success(List.of("favorite")));
+        PlaylistDraftContext draftContext =
+                new PlaylistDraftContext(123456789L, 123L, 456L, fixture.getUser().getIdLong(), "favorite");
         when(fixture.getMusicService().buildPlaylistDraftContext(anyLong(), anyLong(), anyLong(), anyLong(), anyString()))
                 .thenReturn(draftContext);
         when(fixture.getMusicService().isPlaylistDraftDirty(draftContext)).thenReturn(true);

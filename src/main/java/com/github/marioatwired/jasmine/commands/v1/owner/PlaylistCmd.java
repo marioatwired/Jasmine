@@ -28,6 +28,7 @@ import java.util.List;
  *
  * @author John Grosh <john.a.grosh@gmail.com>
  */
+@SuppressWarnings("deprecation") // JDA-Chewtils has no DM context equivalent for text commands yet.
 public class PlaylistCmd extends OwnerCommand 
 {
     private final Bot bot;
@@ -184,7 +185,6 @@ public class PlaylistCmd extends OwnerCommand
             this.name = "setdefault";
             this.aliases = new String[]{"default"};
             this.arguments = "<playlistname|NONE>";
-            this.guildOnly = true;
         }
     }
     
@@ -195,7 +195,6 @@ public class PlaylistCmd extends OwnerCommand
             this.name = "all";
             this.aliases = new String[]{"available","list"};
             this.help = "lists all available playlists";
-            this.guildOnly = true;
         }
 
         @Override

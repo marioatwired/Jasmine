@@ -15,11 +15,13 @@
  */
 package com.github.marioatwired.jasmine.commands.v1.music;
 
-import com.jagrosh.jdautilities.command.CommandEvent;
-import com.jagrosh.jdautilities.menu.Paginator;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.MusicCommand;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.NowPlayingInfo;
+import com.github.marioatwired.jasmine.service.dto.QueueInfo;
+import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.menu.Paginator;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.exceptions.PermissionException;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
@@ -78,10 +80,10 @@ public class QueueCmd extends MusicCommand
         {
         }
 
-        MusicService.QueueInfo queueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
+        QueueInfo queueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
         if (queueInfo == null || queueInfo.isEmpty())
         {
-            MusicService.NowPlayingInfo npInfo = musicService.getNowPlayingInfo(event.getGuild(), event.getJDA());
+            NowPlayingInfo npInfo = musicService.getNowPlayingInfo(event.getGuild(), event.getJDA());
             MessageCreateData embed = npInfo != null && npInfo.isPlaying ? npInfo.nowPlayingMessage : (npInfo != null ? npInfo.noMusicMessage : null);
 
             if (embed != null)

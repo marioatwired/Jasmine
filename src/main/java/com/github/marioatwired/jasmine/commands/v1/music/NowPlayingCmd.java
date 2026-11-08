@@ -15,10 +15,11 @@
  */
 package com.github.marioatwired.jasmine.commands.v1.music;
 
-import com.jagrosh.jdautilities.command.CommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.MusicCommand;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.NowPlayingInfo;
+import com.jagrosh.jdautilities.command.CommandEvent;
 import net.dv8tion.jda.api.Permission;
 
 /**
@@ -42,7 +43,7 @@ public class NowPlayingCmd extends MusicCommand
     @Override
     public void doCommand(CommandEvent event)
     {
-        MusicService.NowPlayingInfo info = musicService.getNowPlayingInfo(event.getGuild(), event.getJDA());
+        NowPlayingInfo info = musicService.getNowPlayingInfo(event.getGuild(), event.getJDA());
 
         if (info == null)
         {

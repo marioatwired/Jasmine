@@ -15,14 +15,16 @@
  */
 package com.github.marioatwired.jasmine.commands.v2.music;
 
-import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v2.MusicSlashCommand;
 import com.github.marioatwired.jasmine.listener.interaction.PaginatedListComponents;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.NowPlayingInfo;
+import com.github.marioatwired.jasmine.service.dto.QueueInfo;
 import com.github.marioatwired.jasmine.settings.RepeatMode;
 import com.github.marioatwired.jasmine.utils.PaginatedListEmbedUtil;
 import com.github.marioatwired.jasmine.utils.TimeUtil;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
@@ -65,10 +67,10 @@ public class QueueSlashCmd extends MusicSlashCommand
     {
         int page = event.getOption("page") != null ? (int) event.getOption("page").getAsLong() : 1;
 
-        MusicService.QueueInfo queueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
+        QueueInfo queueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
         if (queueInfo == null || queueInfo.isEmpty())
         {
-            MusicService.NowPlayingInfo npInfo = musicService.getNowPlayingInfo(event.getGuild(), event.getJDA());
+            NowPlayingInfo npInfo = musicService.getNowPlayingInfo(event.getGuild(), event.getJDA());
             if (npInfo != null)
             {
                 MessageCreateData embed = npInfo.isPlaying ? npInfo.nowPlayingMessage : npInfo.noMusicMessage;
@@ -99,7 +101,7 @@ public class QueueSlashCmd extends MusicSlashCommand
         long userId = event.getUser().getIdLong();
         int tracksOnPage = getTracksOnPage(page, queueInfo.tracks.length);
 
-        MessageEmbed embed = buildQueueEmbed(queueInfo, page, totalPages, 0, event.getMember().getColor());
+        MessageEmbed embed = buildQueueEmbed(queueInfo, page, totalPages, 0, event.getMember().getColors().getPrimary());
         List<ActionRow> components = buildQueueComponents(page, totalPages, tracksOnPage, 0, userId);
 
         event.replyEmbeds(embed).setComponents(components).queue();
@@ -108,7 +110,7 @@ public class QueueSlashCmd extends MusicSlashCommand
     /**
      * Builds the queue embed with all relevant information.
      */
-    public static MessageEmbed buildQueueEmbed(MusicService.QueueInfo queueInfo, int page, int totalPages,
+    public static MessageEmbed buildQueueEmbed(QueueInfo queueInfo, int page, int totalPages,
                                                int selectedTrack, java.awt.Color memberColor)
     {
         int startIndex = (page - 1) * TRACKS_PER_PAGE;

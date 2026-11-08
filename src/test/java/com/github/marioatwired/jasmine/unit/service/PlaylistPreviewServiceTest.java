@@ -4,6 +4,8 @@ import com.github.marioatwired.jasmine.TestBase;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
 import com.github.marioatwired.jasmine.service.MusicService;
 import com.github.marioatwired.jasmine.service.PlaylistPreviewService;
+import com.github.marioatwired.jasmine.service.dto.PlaylistPreviewWithTracks;
+import com.github.marioatwired.jasmine.service.dto.PlaylistTracksPageInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -57,11 +59,11 @@ class PlaylistPreviewServiceTest extends TestBase
     @Test
     void emptyPageReturnsPageInfoWithoutLoadingTracks()
     {
-        AtomicReference<MusicService.PlaylistTracksPageInfo> pageRef = new AtomicReference<>();
+        AtomicReference<PlaylistTracksPageInfo> pageRef = new AtomicReference<>();
 
         previewService.loadPlaylistPageWithTracks("mix", 3, 2, pageRef::set);
 
-        MusicService.PlaylistTracksPageInfo page = pageRef.get();
+        PlaylistTracksPageInfo page = pageRef.get();
         assertEquals("mix", page.playlistName);
         assertEquals(3, page.totalItems);
         assertEquals(4, page.startIndex);
@@ -73,11 +75,11 @@ class PlaylistPreviewServiceTest extends TestBase
     @Test
     void draftPageKeepsDirtyFlag()
     {
-        AtomicReference<MusicService.PlaylistTracksPageInfo> pageRef = new AtomicReference<>();
+        AtomicReference<PlaylistTracksPageInfo> pageRef = new AtomicReference<>();
 
         previewService.loadPlaylistPageWithTracks("mix", List.of("a"), 2, 1, true, pageRef::set);
 
-        MusicService.PlaylistTracksPageInfo page = pageRef.get();
+        PlaylistTracksPageInfo page = pageRef.get();
         assertEquals(1, page.totalItems);
         assertEquals(1, page.startIndex);
         assertFalse(page.hasMore);
@@ -92,7 +94,7 @@ class PlaylistPreviewServiceTest extends TestBase
                 PlaylistLoader.PlaylistErrorType.PLAYLIST_NOT_FOUND, "Playlist not found.", "Playlists", null);
         when(playlistLoader.getPlaylistResult("missing"))
                 .thenReturn(PlaylistLoader.PlaylistResult.failure(error));
-        AtomicReference<MusicService.PlaylistPreviewWithTracks> previewRef = new AtomicReference<>();
+        AtomicReference<PlaylistPreviewWithTracks> previewRef = new AtomicReference<>();
 
         previewService.loadPlaylistPreviewWithTracks("missing", 5, previewRef::set);
 

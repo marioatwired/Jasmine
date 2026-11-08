@@ -31,7 +31,6 @@ public class AutoplaylistCmd extends OwnerCommand
     public AutoplaylistCmd(Bot bot)
     {
         this.bot = bot;
-        this.guildOnly = true;
         this.name = "autoplaylist";
         this.arguments = "<name|NONE>";
         this.help = "sets the default playlist for the server";

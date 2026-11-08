@@ -15,10 +15,11 @@
  */
 package com.github.marioatwired.jasmine.commands.v2.dj;
 
-import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v2.DJSlashCommand;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.ForceSkipResult;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 
 /**
  * DJ slash command to force skip the current song.
@@ -40,7 +41,7 @@ public class ForceskipSlashCmd extends DJSlashCommand
     @Override
     public void doDJCommand(SlashCommandEvent event)
     {
-        MusicService.ForceSkipResult result = musicService.forceSkip(event.getGuild());
+        ForceSkipResult result = musicService.forceSkip(event.getGuild());
         if (result != null)
         {
             event.reply(event.getClient().getSuccess() + " Skipped **" + result.trackTitle + "** " + result.requesterInfo).queue();

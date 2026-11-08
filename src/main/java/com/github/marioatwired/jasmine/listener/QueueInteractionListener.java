@@ -21,6 +21,8 @@ import com.github.marioatwired.jasmine.listener.interaction.ComponentIdParsers;
 import com.github.marioatwired.jasmine.listener.interaction.InteractionGuards;
 import com.github.marioatwired.jasmine.listener.interaction.OutputAdapters;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
+import com.github.marioatwired.jasmine.service.dto.QueueInfo;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -86,7 +88,7 @@ public class QueueInteractionListener extends ListenerAdapter {
         String action = id.action();
 
         MusicService musicService = bot.getMusicService();
-        MusicService.QueueInfo queueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
+        QueueInfo queueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
 
         if (queueInfo == null || queueInfo.isEmpty()) {
             event.editMessage("The queue is now empty!").setEmbeds().setComponents().queue();
@@ -126,9 +128,9 @@ public class QueueInteractionListener extends ListenerAdapter {
             int newPage = Math.min(totalPages, page + 1);
             updateQueueEmbed(event, queueInfo, newPage, totalPages, 0, userId);
         } else if (action.equals("shuffle")) {
-            MusicService.OutputAdapter adapter = OutputAdapters.forQueueEmbed(event);
+            OutputAdapter adapter = OutputAdapters.forQueueEmbed(event);
             musicService.shuffle(event.getGuild(), event.getMember(), 0, adapter);
-            MusicService.QueueInfo newQueueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
+            QueueInfo newQueueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
             if (newQueueInfo != null && !newQueueInfo.isEmpty()) {
                 int newTotalPages = QueueSlashCmd.getTotalPages(newQueueInfo.tracks.length);
                 int safePage = Math.min(page, newTotalPages);
@@ -139,9 +141,9 @@ public class QueueInteractionListener extends ListenerAdapter {
                 event.reply("No track selected!").setEphemeral(true).queue();
                 return;
             }
-            MusicService.OutputAdapter adapter = OutputAdapters.forQueueEmbed(event);
+            OutputAdapter adapter = OutputAdapters.forQueueEmbed(event);
             musicService.removeTrack(event.getGuild(), event.getMember(), selectedTrack, adapter);
-            MusicService.QueueInfo newQueueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
+            QueueInfo newQueueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
             if (newQueueInfo == null || newQueueInfo.isEmpty()) {
                 event.editMessage("The queue is now empty!").setEmbeds().setComponents().queue();
             } else {
@@ -154,9 +156,9 @@ public class QueueInteractionListener extends ListenerAdapter {
                 event.reply("No track selected!").setEphemeral(true).queue();
                 return;
             }
-            MusicService.OutputAdapter adapter = OutputAdapters.forQueueEmbed(event);
+            OutputAdapter adapter = OutputAdapters.forQueueEmbed(event);
             musicService.playNext(event.getGuild(), event.getMember(), selectedTrack, adapter);
-            MusicService.QueueInfo newQueueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
+            QueueInfo newQueueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
             if (newQueueInfo != null && !newQueueInfo.isEmpty()) {
                 int newTotalPages = QueueSlashCmd.getTotalPages(newQueueInfo.tracks.length);
                 updateQueueEmbed(event, newQueueInfo, 1, newTotalPages, 0, userId);
@@ -177,7 +179,7 @@ public class QueueInteractionListener extends ListenerAdapter {
                 }
             }
             MessageEmbed embed = QueueSlashCmd.buildQueueEmbed(queueInfo, page, totalPages, selectedTrack,
-                    event.getMember().getColor());
+                    event.getMember().getColors().getPrimary());
             event.editMessageEmbeds(embed)
                     .setComponents(ActionRow.of(menuBuilder.build()))
                     .queue();
@@ -186,9 +188,9 @@ public class QueueInteractionListener extends ListenerAdapter {
                 event.reply("No track selected!").setEphemeral(true).queue();
                 return;
             }
-            MusicService.OutputAdapter adapter = OutputAdapters.forQueueEmbed(event);
+            OutputAdapter adapter = OutputAdapters.forQueueEmbed(event);
             musicService.playNow(event.getGuild(), event.getMember(), selectedTrack, adapter);
-            MusicService.QueueInfo newQueueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
+            QueueInfo newQueueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
             if (newQueueInfo == null || newQueueInfo.isEmpty()) {
                 event.editMessage("The queue is now empty!").setEmbeds().setComponents().queue();
             } else {
@@ -232,11 +234,11 @@ public class QueueInteractionListener extends ListenerAdapter {
         }
 
         MusicService musicService = bot.getMusicService();
-        MusicService.OutputAdapter adapter = OutputAdapters.forQueueMoveSelect(event);
+        OutputAdapter adapter = OutputAdapters.forQueueMoveSelect(event);
 
         musicService.moveTrack(event.getGuild(), event.getMember(), fromPosition, toPosition, adapter);
 
-        MusicService.QueueInfo queueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
+        QueueInfo queueInfo = musicService.getQueueInfo(event.getGuild(), event.getJDA());
         if (queueInfo == null || queueInfo.isEmpty()) {
             event.editMessage("The queue is now empty!").setEmbeds().setComponents().queue();
             return;
@@ -247,17 +249,17 @@ public class QueueInteractionListener extends ListenerAdapter {
         int tracksOnPage = QueueSlashCmd.getTracksOnPage(safePage, queueInfo.tracks.length);
 
         MessageEmbed embed = QueueSlashCmd.buildQueueEmbed(queueInfo, safePage, totalPages, 0,
-                event.getMember().getColor());
+                event.getMember().getColors().getPrimary());
         List<ActionRow> components = QueueSlashCmd.buildQueueComponents(safePage, totalPages, tracksOnPage, 0, userId);
 
         event.editMessageEmbeds(embed).setComponents(components).queue();
     }
 
-    private void updateQueueEmbed(ButtonInteractionEvent event, MusicService.QueueInfo queueInfo,
+    private void updateQueueEmbed(ButtonInteractionEvent event, QueueInfo queueInfo,
                                   int page, int totalPages, int selectedTrack, long userId) {
         int tracksOnPage = QueueSlashCmd.getTracksOnPage(page, queueInfo.tracks.length);
         MessageEmbed embed = QueueSlashCmd.buildQueueEmbed(queueInfo, page, totalPages, selectedTrack,
-                event.getMember().getColor());
+                event.getMember().getColors().getPrimary());
         List<ActionRow> components = QueueSlashCmd.buildQueueComponents(page, totalPages, tracksOnPage, selectedTrack, userId);
         event.editMessageEmbeds(embed).setComponents(components).queue();
     }

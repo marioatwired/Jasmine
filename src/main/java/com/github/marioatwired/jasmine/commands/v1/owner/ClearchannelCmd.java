@@ -33,7 +33,6 @@ public class ClearchannelCmd extends OwnerCommand
         this.name = "clearchannel";
         this.help = "clears all messages in the command channel set with settc";
         this.aliases = bot.getConfig().getAliases(this.name);
-        this.guildOnly = true;
     }
 
     @Override

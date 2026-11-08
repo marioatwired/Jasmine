@@ -2,6 +2,7 @@ package com.github.marioatwired.jasmine.unit.service;
 
 import com.github.marioatwired.jasmine.TestBase;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +12,7 @@ import static org.mockito.Mockito.*;
 
 public class PlayerServiceTest extends TestBase {
 
-    private MusicService.OutputAdapter output = mock(MusicService.OutputAdapter.class);
+    private OutputAdapter output = mock(OutputAdapter.class);
 
     private MusicService musicService;
 

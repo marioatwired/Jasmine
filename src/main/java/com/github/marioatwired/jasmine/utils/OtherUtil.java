@@ -32,6 +32,7 @@ import okhttp3.ResponseBody;
 
 import java.io.*;
 import java.net.Proxy;
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -114,7 +115,7 @@ public class OtherUtil
             return null;
         try 
         {
-            URL u = new URL(url);
+            URL u = URI.create(url).toURL();
             URLConnection urlConnection = u.openConnection();
             urlConnection.setRequestProperty("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36");
             return urlConnection.getInputStream();

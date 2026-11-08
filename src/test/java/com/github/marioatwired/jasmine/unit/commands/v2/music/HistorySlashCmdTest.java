@@ -17,6 +17,7 @@ package com.github.marioatwired.jasmine.unit.commands.v2.music;
 
 import com.github.marioatwired.jasmine.commands.v2.music.HistorySlashCmd;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
 import com.github.marioatwired.jasmine.testutil.commands.SlashCommandTestFixture;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
@@ -65,7 +66,7 @@ public class HistorySlashCmdTest
     void testDoCommand_EmptyHistoryInfo_ShowsEphemeralWarning()
     {
         when(fixture.getEvent().getOption("page")).thenReturn(null);
-        MusicService.HistoryInfo empty = new MusicService.HistoryInfo(new String[0], 0L, 10);
+        HistoryInfo empty = new HistoryInfo(new String[0], 0L, 10);
         when(fixture.getMusicService().getHistoryInfo(fixture.getGuild(), fixture.getJda())).thenReturn(empty);
 
         command.doCommand(fixture.getEvent());
@@ -78,7 +79,7 @@ public class HistorySlashCmdTest
     void testDoCommand_DisabledHistory_ShowsDisabledWarning()
     {
         when(fixture.getEvent().getOption("page")).thenReturn(null);
-        MusicService.HistoryInfo disabled = new MusicService.HistoryInfo(new String[0], 0L, 0, true);
+        HistoryInfo disabled = new HistoryInfo(new String[0], 0L, 0, true);
         when(fixture.getMusicService().getHistoryInfo(fixture.getGuild(), fixture.getJda())).thenReturn(disabled);
 
         command.doCommand(fixture.getEvent());
@@ -91,7 +92,7 @@ public class HistorySlashCmdTest
     void testDoCommand_WithHistory_ShowsEmbedAndComponents()
     {
         when(fixture.getEvent().getOption("page")).thenReturn(null);
-        MusicService.HistoryInfo historyInfo = new MusicService.HistoryInfo(
+        HistoryInfo historyInfo = new HistoryInfo(
                 new String[]{"Track 1", "Track 2", "Track 3"},
                 300000L,
                 10

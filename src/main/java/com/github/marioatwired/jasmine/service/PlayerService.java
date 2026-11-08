@@ -21,10 +21,9 @@ import com.github.marioatwired.jasmine.audio.QueuedTrack;
 import com.github.marioatwired.jasmine.audio.RequestMetadata;
 import com.github.marioatwired.jasmine.commands.v1.DJCommand;
 import com.github.marioatwired.jasmine.queue.AbstractQueue;
-import com.github.marioatwired.jasmine.service.MusicService.ForceSkipResult;
-import com.github.marioatwired.jasmine.service.MusicService.OutputAdapter;
-import com.github.marioatwired.jasmine.service.MusicService.TrackAddResult;
-import com.github.marioatwired.jasmine.service.MusicService.VolumeResult;
+import com.github.marioatwired.jasmine.service.dto.ForceSkipResult;
+import com.github.marioatwired.jasmine.service.dto.TrackAddResult;
+import com.github.marioatwired.jasmine.service.dto.VolumeResult;
 import com.github.marioatwired.jasmine.settings.RepeatMode;
 import com.github.marioatwired.jasmine.settings.Settings;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
@@ -32,7 +31,6 @@ import com.github.marioatwired.jasmine.utils.TimeUtil;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,20 +38,19 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 
 /**
- * Playback control and queue operations. This is the core player service used by commands,
- * slash commands, listeners, and the GUI.
+ * Playback control, track loading, and track enqueue operations.
+ * <p>
+ * Queue inspection and mutation live in {@link QueueService}.
  */
-public class PlayerService
+public class PlayerService implements TrackEnqueuer
 {
     private static final Logger LOG = LoggerFactory.getLogger(PlayerService.class);
 
     private final Bot bot;
-    private final MusicService musicService;
 
-    public PlayerService(Bot bot, MusicService musicService)
+    public PlayerService(Bot bot)
     {
         this.bot = bot;
-        this.musicService = musicService;
     }
 
     @FunctionalInterface
@@ -144,17 +141,7 @@ public class PlayerService
                 guild.getId(), member.getUser().getName(), args);
 
         bot.getPlayerManager().loadItemOrdered(guild, args,
-                bot.getAudioLoadWrapper().wrap(args, new AudioLoadResultHandlers.PlayNextResultHandler(musicService, bot, output, guild, member, args, false, channel)));
-    }
-
-    public void playNext(Guild guild, Member member, int position, OutputAdapter output)
-    {
-        if (position == 1)
-        {
-            output.replyWarning("This track is already next!");
-            return;
-        }
-        moveTrack(guild, member, position, 1, output);
+                bot.getAudioLoadWrapper().wrap(args, new AudioLoadResultHandlers.PlayNextResultHandler(this, bot, output, guild, member, args, false, channel)));
     }
 
     public void play(Guild guild, Member member, String args, TextChannel channel, OutputAdapter output)
@@ -193,7 +180,7 @@ public class PlayerService
                 guild.getId(), member.getUser().getName(), args);
 
         bot.getPlayerManager().loadItemOrdered(guild, args,
-                bot.getAudioLoadWrapper().wrap(args, new AudioLoadResultHandlers.PlayResultHandler(musicService, bot, output, guild, member, args, false, channel)));
+                bot.getAudioLoadWrapper().wrap(args, new AudioLoadResultHandlers.PlayResultHandler(this, bot, output, guild, member, args, false, channel)));
     }
 
     public void previous(Guild guild, Member member, OutputAdapter output)
@@ -257,28 +244,6 @@ public class PlayerService
             LOG.debug("Previous failed: no previous tracks in history");
             output.replyError("There are no previous tracks!");
         }
-    }
-
-    public void shuffle(Guild guild, Member member, int startIndex, OutputAdapter output)
-    {
-        if (!requireDJPermission(guild, member, output, "use this button"))
-            return;
-
-        AudioHandler handler = getHandler(guild);
-        int s = handler.getQueue().shuffle(startIndex);
-        output.replySuccess("Shuffled " + s + " tracks!");
-    }
-
-    public int shuffleUserTracks(Guild guild, long userId)
-    {
-        LOG.debug("Shuffling user tracks: guild={}, userId={}", guild.getId(), userId);
-
-        AudioHandler handler = getHandler(guild);
-        int shuffled = handler.getQueue().shuffle(userId);
-
-        LOG.info("User tracks shuffled: guild={}, userId={}, count={}", guild.getId(), userId, shuffled);
-
-        return shuffled;
     }
 
     public void cycleRepeatMode(Guild guild, Member member, OutputAdapter output)
@@ -586,109 +551,6 @@ public class PlayerService
         }
     }
 
-    public void removeTrack(Guild guild, Member member, int position, OutputAdapter output)
-    {
-        AudioHandler handler = getHandler(guild);
-
-        if (!requireNonEmptyQueue(handler, output))
-            return;
-
-        if (!validateQueuePosition(handler, position, output))
-            return;
-
-        boolean isDJ = DJCommand.checkDJPermission(bot, guild, member);
-        QueuedTrack qt = handler.getQueue().get(position - 1);
-
-        if (qt.getIdentifier() == member.getIdLong())
-        {
-            handler.getQueue().remove(position - 1);
-            output.replySuccess("Removed **" + FormatUtil.getTrackTitle(qt.getTrack()) + "** from the queue");
-        }
-        else if (isDJ)
-        {
-            handler.getQueue().remove(position - 1);
-            User u = null;
-            try
-            {
-                u = guild.getJDA().getUserById(qt.getIdentifier());
-            }
-            catch (Exception ignored) {}
-
-            output.replySuccess("Removed **" + FormatUtil.getTrackTitle(qt.getTrack())
-                    + "** from the queue (requested by " + (u == null ? "someone" : "**" + u.getName() + "**") + ")");
-        }
-        else
-        {
-            output.replyError("You cannot remove **" + FormatUtil.getTrackTitle(qt.getTrack()) + "** because you didn't add it!");
-        }
-    }
-
-    public void removeAllTracks(Guild guild, Member member, OutputAdapter output)
-    {
-        AudioHandler handler = getHandler(guild);
-
-        if (!requireNonEmptyQueue(handler, output))
-            return;
-
-        int count = handler.getQueue().removeAll(member.getIdLong());
-        if (count == 0)
-        {
-            output.replyWarning("You don't have any songs in the queue!");
-        }
-        else
-        {
-            output.replySuccess("Successfully removed your " + count + " entries.");
-        }
-    }
-
-    public int removeAllTracksByUser(Guild guild, long userId)
-    {
-        LOG.debug("Removing all tracks by user: guild={}, userId={}", guild.getId(), userId);
-
-        AudioHandler handler = getHandler(guild);
-        int count = handler.getQueue().removeAll(userId);
-
-        LOG.info("Removed {} tracks by user: guild={}, userId={}", count, guild.getId(), userId);
-
-        return count;
-    }
-
-    public boolean isQueueEmpty(Guild guild)
-    {
-        AudioHandler handler = getHandler(guild);
-        return handler == null || handler.getQueue().isEmpty();
-    }
-
-    public void moveTrack(Guild guild, Member member, int from, int to, OutputAdapter output)
-    {
-        if (!requireDJPermission(guild, member, output, "move tracks"))
-            return;
-
-        if (from == to)
-        {
-            output.replyError("Can't move a track to the same position.");
-            return;
-        }
-
-        AudioHandler handler = getHandler(guild);
-        AbstractQueue<QueuedTrack> queue = handler.getQueue();
-
-        if (isInvalidPosition(queue, from))
-        {
-            output.replyError("`" + from + "` is not a valid position in the queue!");
-            return;
-        }
-        if (isInvalidPosition(queue, to))
-        {
-            output.replyError("`" + to + "` is not a valid position in the queue!");
-            return;
-        }
-
-        QueuedTrack track = queue.moveItem(from - 1, to - 1);
-        String trackTitle = FormatUtil.getTrackTitle(track.getTrack());
-        output.replySuccess("Moved **" + trackTitle + "** from position `" + from + "` to `" + to + "`.");
-    }
-
     public void playNow(Guild guild, Member member, int position, OutputAdapter output)
     {
         if (!requireDJPermission(guild, member, output, "play a track immediately"))
@@ -717,35 +579,6 @@ public class PlayerService
         handler.getPlayer().stopTrack();
 
         output.replySuccess("Now playing **" + trackTitle + "**");
-    }
-
-    public String moveTrackPosition(Guild guild, int from, int to)
-    {
-        LOG.debug("Moving track: guild={}, from={}, to={}", guild.getId(), from, to);
-
-        AudioHandler handler = getHandler(guild);
-        AbstractQueue<QueuedTrack> queue = handler.getQueue();
-
-        if (isInvalidPosition(queue, from) || isInvalidPosition(queue, to))
-        {
-            LOG.debug("Move rejected: invalid position(s) - from={}, to={}, queueSize={}",
-                    from, to, queue.size());
-            return null;
-        }
-
-        QueuedTrack track = queue.moveItem(from - 1, to - 1);
-        String title = FormatUtil.getTrackTitle(track.getTrack());
-
-        LOG.info("Track moved: guild={}, track=\"{}\", from={}, to={}",
-                guild.getId(), title, from, to);
-
-        return title;
-    }
-
-    public boolean isValidQueuePosition(Guild guild, int position)
-    {
-        AudioHandler handler = getHandler(guild);
-        return handler != null && position >= 1 && position <= handler.getQueue().size();
     }
 
     public void skipTo(Guild guild, Member member, int position, OutputAdapter output)
@@ -788,12 +621,6 @@ public class PlayerService
         return trackTitle;
     }
 
-    public int getQueueSize(Guild guild)
-    {
-        AudioHandler handler = getHandler(guild);
-        return handler != null ? handler.getQueue().size() : 0;
-    }
-
     private AudioHandler getHandler(Guild guild)
     {
         return (AudioHandler) guild.getAudioManager().getSendingHandler();
@@ -829,15 +656,4 @@ public class PlayerService
         }
         return true;
     }
-
-    private boolean requireNonEmptyQueue(AudioHandler handler, OutputAdapter output)
-    {
-        if (handler.getQueue().isEmpty())
-        {
-            output.replyError("There is nothing in the queue!");
-            return false;
-        }
-        return true;
-    }
-
 }

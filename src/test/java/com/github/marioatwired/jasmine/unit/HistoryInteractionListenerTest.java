@@ -17,6 +17,7 @@ package com.github.marioatwired.jasmine.unit;
 
 import com.github.marioatwired.jasmine.listener.HistoryInteractionListener;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
 import com.github.marioatwired.jasmine.testutil.listener.ListenerTestFixture;
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +56,7 @@ public class HistoryInteractionListenerTest {
     @DisplayName("onButtonInteraction() rejects select action not present on current page")
     void onButtonInteraction_selectOutsidePage_repliesError() {
         fixture.withButtonId("history_select11_1_0_" + fixture.getUser().getIdLong());
-        MusicService.HistoryInfo info = new MusicService.HistoryInfo(
+        HistoryInfo info = new HistoryInfo(
                 new String[]{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"},
                 0L,
                 50
@@ -72,7 +73,7 @@ public class HistoryInteractionListenerTest {
     @DisplayName("onButtonInteraction() shows disabled message when history is disabled")
     void onButtonInteraction_historyDisabled_showsDisabledMessage() {
         fixture.withButtonId("history_prev_1_0_" + fixture.getUser().getIdLong());
-        MusicService.HistoryInfo info = new MusicService.HistoryInfo(new String[0], 0L, 0, true);
+        HistoryInfo info = new HistoryInfo(new String[0], 0L, 0, true);
         when(fixture.getMusicService().getHistoryInfo(fixture.getGuild(), fixture.getJda())).thenReturn(info);
         MessageEditCallbackAction editAction = mock(MessageEditCallbackAction.class);
         when(fixture.getButtonInteractionEvent().editMessage(any(String.class))).thenReturn(editAction);

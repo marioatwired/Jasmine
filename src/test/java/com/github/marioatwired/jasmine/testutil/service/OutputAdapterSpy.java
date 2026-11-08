@@ -17,6 +17,7 @@ package com.github.marioatwired.jasmine.testutil.service;
 
 import com.github.marioatwired.jasmine.audio.AudioHandler;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
 import net.dv8tion.jda.api.entities.Message;
 
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Spy implementation of MusicService.OutputAdapter for testing.
+ * Spy implementation of OutputAdapter for testing.
  * Captures all method calls for verification in tests.
  * 
  * Usage:
@@ -36,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * spy.assertSuccessMessageContains("Added");
  * </pre>
  */
-public class OutputAdapterSpy implements MusicService.OutputAdapter
+public class OutputAdapterSpy implements OutputAdapter
 {
     // Captured calls
     private final List<String> successMessages = new ArrayList<>();

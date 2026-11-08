@@ -15,11 +15,13 @@
  */
 package com.github.marioatwired.jasmine.commands.v1.music;
 
-import com.jagrosh.jdautilities.command.CommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.MusicCommand;
 import com.github.marioatwired.jasmine.commands.v2.music.HistorySlashCmd;
+import com.github.marioatwired.jasmine.service.HistoryService;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
+import com.jagrosh.jdautilities.command.CommandEvent;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
@@ -60,7 +62,7 @@ public class HistoryCmd extends MusicCommand
             }
         }
 
-        MusicService.HistoryInfo historyInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
+        HistoryInfo historyInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
         if (historyInfo == null)
         {
             event.reply(event.getClient().getWarning() + " Playback history is empty!");
@@ -68,7 +70,7 @@ public class HistoryCmd extends MusicCommand
         }
         if (historyInfo.isDisabled())
         {
-            event.reply(event.getClient().getWarning() + " " + MusicService.HISTORY_DISABLED_MESSAGE);
+            event.reply(event.getClient().getWarning() + " " + HistoryService.HISTORY_DISABLED_MESSAGE);
             return;
         }
         if (historyInfo.isEmpty())
@@ -91,7 +93,7 @@ public class HistoryCmd extends MusicCommand
         int tracksOnPage = HistorySlashCmd.getTracksOnPage(page, historyInfo.tracks.length);
 
         var member = event.getMember();
-        var color = member != null ? member.getColor() : event.getSelfMember().getColor();
+        var color = member != null ? member.getColors().getPrimary() : event.getSelfMember().getColors().getPrimary();
         var embed = HistorySlashCmd.buildHistoryEmbed(historyInfo, page, totalPages, 0, color);
         List<net.dv8tion.jda.api.components.actionrow.ActionRow> components =
                 HistorySlashCmd.buildHistoryComponents(page, totalPages, tracksOnPage, 0, userId);

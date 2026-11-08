@@ -28,6 +28,7 @@ import java.io.InputStream;
  *
  * @author John Grosh <john.a.grosh@gmail.com>
  */
+@SuppressWarnings("deprecation") // JDA-Chewtils has no DM context equivalent for text commands yet.
 public class SetavatarCmd extends OwnerCommand 
 {
     public SetavatarCmd(Bot bot)

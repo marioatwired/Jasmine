@@ -16,10 +16,10 @@
 package com.github.marioatwired.jasmine.service;
 
 import com.github.marioatwired.jasmine.Bot;
-import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist;
-import com.github.marioatwired.jasmine.service.MusicService.PlaylistDraftContext;
-import com.github.marioatwired.jasmine.service.MusicService.PlaylistDraftMutationResult;
+import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDraftContext;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDraftMutationResult;
 
 import java.util.ArrayList;
 import java.util.List;

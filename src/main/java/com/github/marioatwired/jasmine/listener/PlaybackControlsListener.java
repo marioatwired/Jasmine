@@ -20,6 +20,7 @@ import com.github.marioatwired.jasmine.audio.AudioHandler;
 import com.github.marioatwired.jasmine.listener.interaction.ComponentIdParsers;
 import com.github.marioatwired.jasmine.listener.interaction.OutputAdapters;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -94,8 +95,8 @@ public class PlaybackControlsListener extends ListenerAdapter {
         }
     }
 
-    private static MusicService.OutputAdapter suppressSuccess(MusicService.OutputAdapter delegate) {
-        return new MusicService.OutputAdapter() {
+    private static OutputAdapter suppressSuccess(OutputAdapter delegate) {
+        return new OutputAdapter() {
             @Override
             public void replySuccess(String content) {
                 // Intentionally silent for targeted now-playing actions.

@@ -31,7 +31,6 @@ public abstract class AdminSlashCommand extends SlashCommand
     public AdminSlashCommand(Bot bot)
     {
         this.bot = bot;
-        this.guildOnly = true;
         this.category = new Category("Admin");
     }
 

@@ -15,12 +15,14 @@
  */
 package com.github.marioatwired.jasmine.unit.commands.v1.music;
 
-import com.jagrosh.jdautilities.command.CommandClient;
-import com.jagrosh.jdautilities.command.CommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.music.PlaylistsCmd;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
+import com.jagrosh.jdautilities.command.CommandClient;
+import com.jagrosh.jdautilities.command.CommandEvent;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.RoleColors;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,7 +62,7 @@ class PlaylistsCmdTest
         when(event.getAuthor()).thenReturn(user);
         when(user.getIdLong()).thenReturn(42L);
         when(event.getMember()).thenReturn(member);
-        when(member.getColor()).thenReturn(null);
+        when(member.getColors()).thenReturn(RoleColors.DEFAULT);
 
         command = new PlaylistsCmd(bot);
     }
@@ -68,7 +70,7 @@ class PlaylistsCmdTest
     @Test
     void doCommand_emptyPlaylists_repliesWarningText()
     {
-        when(musicService.getAvailablePlaylistNames()).thenReturn(MusicService.PlaylistNamesInfo.success(List.of()));
+        when(musicService.getAvailablePlaylistNames()).thenReturn(PlaylistNamesInfo.success(List.of()));
 
         command.doCommand(event);
 
@@ -79,7 +81,7 @@ class PlaylistsCmdTest
     void doCommand_hasPlaylists_repliesInteractiveMessage()
     {
         when(musicService.getAvailablePlaylistNames())
-                .thenReturn(MusicService.PlaylistNamesInfo.success(List.of("favorite", "workout")));
+                .thenReturn(PlaylistNamesInfo.success(List.of("favorite", "workout")));
 
         command.doCommand(event);
 

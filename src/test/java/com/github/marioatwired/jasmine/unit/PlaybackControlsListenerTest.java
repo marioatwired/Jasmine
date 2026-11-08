@@ -17,15 +17,16 @@ package com.github.marioatwired.jasmine.unit;
 
 import com.github.marioatwired.jasmine.listener.PlaybackControlsListener;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
 import com.github.marioatwired.jasmine.testutil.listener.ListenerTestFixture;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
-import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -67,7 +68,7 @@ public class PlaybackControlsListenerTest {
             verify(fixture.getMusicService()).stop(
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
-                    any(MusicService.OutputAdapter.class)
+                    any(OutputAdapter.class)
             );
         }
 
@@ -83,7 +84,7 @@ public class PlaybackControlsListenerTest {
             verify(fixture.getMusicService()).pause(
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
-                    any(MusicService.OutputAdapter.class)
+                    any(OutputAdapter.class)
             );
         }
 
@@ -99,7 +100,7 @@ public class PlaybackControlsListenerTest {
             verify(fixture.getMusicService()).skip(
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
-                    any(MusicService.OutputAdapter.class)
+                    any(OutputAdapter.class)
             );
         }
 
@@ -112,14 +113,14 @@ public class PlaybackControlsListenerTest {
 
             listener.onButtonInteraction(fixture.getButtonInteractionEvent());
 
-            ArgumentCaptor<MusicService.OutputAdapter> captor = ArgumentCaptor.forClass(MusicService.OutputAdapter.class);
+            ArgumentCaptor<OutputAdapter> captor = ArgumentCaptor.forClass(OutputAdapter.class);
             verify(fixture.getMusicService()).skip(
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
                     captor.capture()
             );
 
-            MusicService.OutputAdapter adapter = captor.getValue();
+            OutputAdapter adapter = captor.getValue();
             adapter.replySuccess("Skipped!");
             verify(fixture.getButtonInteractionEvent(), never()).reply("Skipped!");
         }
@@ -136,7 +137,7 @@ public class PlaybackControlsListenerTest {
             verify(fixture.getMusicService()).previous(
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
-                    any(MusicService.OutputAdapter.class)
+                    any(OutputAdapter.class)
             );
         }
 
@@ -149,14 +150,14 @@ public class PlaybackControlsListenerTest {
 
             listener.onButtonInteraction(fixture.getButtonInteractionEvent());
 
-            ArgumentCaptor<MusicService.OutputAdapter> captor = ArgumentCaptor.forClass(MusicService.OutputAdapter.class);
+            ArgumentCaptor<OutputAdapter> captor = ArgumentCaptor.forClass(OutputAdapter.class);
             verify(fixture.getMusicService()).previous(
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
                     captor.capture()
             );
 
-            MusicService.OutputAdapter adapter = captor.getValue();
+            OutputAdapter adapter = captor.getValue();
             adapter.replySuccess("Went back to **test**");
             verify(fixture.getButtonInteractionEvent(), never()).reply("Went back to **test**");
         }
@@ -174,7 +175,7 @@ public class PlaybackControlsListenerTest {
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
                     eq(0),
-                    any(MusicService.OutputAdapter.class)
+                    any(OutputAdapter.class)
             );
         }
 
@@ -187,7 +188,7 @@ public class PlaybackControlsListenerTest {
 
             listener.onButtonInteraction(fixture.getButtonInteractionEvent());
 
-            ArgumentCaptor<MusicService.OutputAdapter> captor = ArgumentCaptor.forClass(MusicService.OutputAdapter.class);
+            ArgumentCaptor<OutputAdapter> captor = ArgumentCaptor.forClass(OutputAdapter.class);
             verify(fixture.getMusicService()).shuffle(
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
@@ -195,7 +196,7 @@ public class PlaybackControlsListenerTest {
                     captor.capture()
             );
 
-            MusicService.OutputAdapter adapter = captor.getValue();
+            OutputAdapter adapter = captor.getValue();
             adapter.replySuccess("Shuffled!");
             verify(fixture.getButtonInteractionEvent()).reply("Shuffled!");
             verify(fixture.getReplyAction()).setEphemeral(true);
@@ -213,7 +214,7 @@ public class PlaybackControlsListenerTest {
             verify(fixture.getMusicService()).cycleRepeatMode(
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
-                    any(MusicService.OutputAdapter.class)
+                    any(OutputAdapter.class)
             );
         }
 
@@ -229,17 +230,17 @@ public class PlaybackControlsListenerTest {
             verify(fixture.getMusicService()).addCurrentTrackToFavorites(
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
-                    any(MusicService.OutputAdapter.class)
+                    any(OutputAdapter.class)
             );
 
-            ArgumentCaptor<MusicService.OutputAdapter> captor = ArgumentCaptor.forClass(MusicService.OutputAdapter.class);
+            ArgumentCaptor<OutputAdapter> captor = ArgumentCaptor.forClass(OutputAdapter.class);
             verify(fixture.getMusicService()).addCurrentTrackToFavorites(
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
                     captor.capture()
             );
 
-            MusicService.OutputAdapter adapter = captor.getValue();
+            OutputAdapter adapter = captor.getValue();
             adapter.replySuccess("ok");
             verify(fixture.getButtonInteractionEvent()).reply("ok");
             verify(fixture.getReplyAction(), never()).setEphemeral(true);
@@ -260,7 +261,7 @@ public class PlaybackControlsListenerTest {
 
             listener.onButtonInteraction(fixture.getButtonInteractionEvent());
 
-            ArgumentCaptor<MusicService.OutputAdapter> captor = ArgumentCaptor.forClass(MusicService.OutputAdapter.class);
+            ArgumentCaptor<OutputAdapter> captor = ArgumentCaptor.forClass(OutputAdapter.class);
             verify(fixture.getMusicService()).addCurrentTrackToFavorites(
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
@@ -274,7 +275,7 @@ public class PlaybackControlsListenerTest {
             when(hook.sendMessage(anyString())).thenReturn(followup);
             when(followup.setEphemeral(true)).thenReturn(followup);
 
-            MusicService.OutputAdapter adapter = captor.getValue();
+            OutputAdapter adapter = captor.getValue();
             adapter.replySuccess("ok");
             verify(hook).sendMessage("ok");
             verify(fixture.getButtonInteractionEvent(), never()).reply("ok");
@@ -302,7 +303,7 @@ public class PlaybackControlsListenerTest {
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
                     eq(-10),
-                    any(MusicService.OutputAdapter.class)
+                    any(OutputAdapter.class)
             );
         }
 
@@ -319,7 +320,7 @@ public class PlaybackControlsListenerTest {
                     eq(fixture.getGuild()),
                     eq(fixture.getMember()),
                     eq(10),
-                    any(MusicService.OutputAdapter.class)
+                    any(OutputAdapter.class)
             );
         }
 

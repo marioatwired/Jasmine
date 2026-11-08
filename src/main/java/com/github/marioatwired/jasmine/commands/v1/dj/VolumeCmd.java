@@ -15,11 +15,12 @@
  */
 package com.github.marioatwired.jasmine.commands.v1.dj;
 
-import com.jagrosh.jdautilities.command.CommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.DJCommand;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.VolumeResult;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
+import com.jagrosh.jdautilities.command.CommandEvent;
 
 /**
  *
@@ -60,7 +61,7 @@ public class VolumeCmd extends DJCommand
                 newVolume = -1;
             }
 
-            MusicService.VolumeResult result = musicService.setVolume(event.getGuild(), newVolume);
+            VolumeResult result = musicService.setVolume(event.getGuild(), newVolume);
             if (result == null)
             {
                 event.replyError("Volume must be a valid integer between 0 and 150!");

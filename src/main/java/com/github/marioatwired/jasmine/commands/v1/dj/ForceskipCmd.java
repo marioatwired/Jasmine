@@ -15,10 +15,11 @@
  */
 package com.github.marioatwired.jasmine.commands.v1.dj;
 
-import com.jagrosh.jdautilities.command.CommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.DJCommand;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.ForceSkipResult;
+import com.jagrosh.jdautilities.command.CommandEvent;
 
 /**
  *
@@ -41,7 +42,7 @@ public class ForceskipCmd extends DJCommand
     @Override
     public void doCommand(CommandEvent event)
     {
-        MusicService.ForceSkipResult result = musicService.forceSkip(event.getGuild());
+        ForceSkipResult result = musicService.forceSkip(event.getGuild());
         if (result != null)
         {
             event.replySuccess("Skipped **" + result.trackTitle + "** " + result.requesterInfo);
