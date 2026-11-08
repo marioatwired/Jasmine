@@ -18,7 +18,6 @@ package com.github.marioatwired.jasmine.commands.v2.music;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v2.MusicSlashCommand;
 import com.github.marioatwired.jasmine.listener.interaction.PaginatedListComponents;
-import com.github.marioatwired.jasmine.service.MusicService;
 import com.github.marioatwired.jasmine.service.dto.PlaylistDetailsInfo;
 import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
@@ -76,7 +75,7 @@ public class PlaylistsSlashCmd extends MusicSlashCommand
             int page = 1;
             long userId = event.getUser().getIdLong();
             int playlistsOnPage = getPlaylistsOnPage(page, list.size());
-            Color color = event.getMember() == null ? null : event.getMember().getColor();
+            Color color = event.getMember() == null ? null : event.getMember().getColors().getPrimary();
 
             MessageEmbed embed = buildPlaylistsEmbed(list, page, totalPages, 0, color);
             List<ActionRow> components = buildPlaylistsComponents(page, totalPages, playlistsOnPage, 0, userId);

@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Audio load result handlers for processing track/playlist loading results.
- * These handlers are used by MusicService for play and playNext operations.
+ * These handlers are used by PlayerService for play and playNext operations.
  */
 public final class AudioLoadResultHandlers
 {
@@ -58,7 +58,7 @@ public final class AudioLoadResultHandlers
      */
     public static abstract class BaseResultHandler implements AudioLoadResultHandler
     {
-        protected final MusicService musicService;
+        protected final TrackEnqueuer trackEnqueuer;
         protected final Bot bot;
         protected final OutputAdapter output;
         protected final Guild guild;
@@ -67,10 +67,10 @@ public final class AudioLoadResultHandlers
         protected final boolean ytsearch;
         protected final TextChannel channel;
 
-        protected BaseResultHandler(MusicService musicService, Bot bot, OutputAdapter output,
+        protected BaseResultHandler(TrackEnqueuer trackEnqueuer, Bot bot, OutputAdapter output,
                                      Guild guild, Member member, String args, boolean ytsearch, TextChannel channel)
         {
-            this.musicService = musicService;
+            this.trackEnqueuer = trackEnqueuer;
             this.bot = bot;
             this.output = output;
             this.guild = guild;
@@ -133,16 +133,16 @@ public final class AudioLoadResultHandlers
         private static final String LOAD = "\uD83D\uDCE5"; // 📥
         private static final String CANCEL = "\uD83D\uDEAB"; // 🚫
 
-        public PlayResultHandler(MusicService musicService, Bot bot, OutputAdapter output,
+        public PlayResultHandler(TrackEnqueuer trackEnqueuer, Bot bot, OutputAdapter output,
                                   Guild guild, Member member, String args, boolean ytsearch, TextChannel channel)
         {
-            super(musicService, bot, output, guild, member, args, ytsearch, channel);
+            super(trackEnqueuer, bot, output, guild, member, args, ytsearch, channel);
         }
 
         @Override
         protected BaseResultHandler createFallbackHandler()
         {
-            return new PlayResultHandler(musicService, bot, output, guild, member, args, true, channel);
+            return new PlayResultHandler(trackEnqueuer, bot, output, guild, member, args, true, channel);
         }
 
         @Override
@@ -153,10 +153,10 @@ public final class AudioLoadResultHandlers
 
         private void loadSingle(AudioTrack track, AudioPlaylist playlist)
         {
-            TrackAddResult result = musicService.addTrackToQueue(guild, member, track, args, channel);
+            TrackAddResult result = trackEnqueuer.addTrackToQueue(guild, member, track, args, channel);
             if (result == null)
             {
-                output.editMessage(FormatUtil.filter(bot.getConfig().getWarning() + " " + musicService.formatTooLongError(track)));
+                output.editMessage(FormatUtil.filter(bot.getConfig().getWarning() + " " + trackEnqueuer.formatTooLongError(track)));
                 return;
             }
 
@@ -211,7 +211,7 @@ public final class AudioLoadResultHandlers
             int[] count = {0};
             AudioHandler handler = (AudioHandler) guild.getAudioManager().getSendingHandler();
             playlist.getTracks().forEach((track) -> {
-                if (!musicService.isTooLong(track) && !track.equals(exclude))
+                if (!trackEnqueuer.isTooLong(track) && !track.equals(exclude))
                 {
                     handler.setLastReason(member.getUser().getName() + " added a playlist.");
                     handler.addTrack(new QueuedTrack(track,
@@ -290,16 +290,16 @@ public final class AudioLoadResultHandlers
      */
     public static class PlayNextResultHandler extends BaseResultHandler
     {
-        public PlayNextResultHandler(MusicService musicService, Bot bot, OutputAdapter output,
+        public PlayNextResultHandler(TrackEnqueuer trackEnqueuer, Bot bot, OutputAdapter output,
                                       Guild guild, Member member, String args, boolean ytsearch, TextChannel channel)
         {
-            super(musicService, bot, output, guild, member, args, ytsearch, channel);
+            super(trackEnqueuer, bot, output, guild, member, args, ytsearch, channel);
         }
 
         @Override
         protected BaseResultHandler createFallbackHandler()
         {
-            return new PlayNextResultHandler(musicService, bot, output, guild, member, args, true, channel);
+            return new PlayNextResultHandler(trackEnqueuer, bot, output, guild, member, args, true, channel);
         }
 
         @Override
@@ -312,10 +312,10 @@ public final class AudioLoadResultHandlers
         {
             LOG.debug("PlayNext loading track: guild={}, track=\"{}\"", guild.getId(), track.getInfo().title);
 
-            TrackAddResult result = musicService.addTrackToFront(guild, member, track, args, channel);
+            TrackAddResult result = trackEnqueuer.addTrackToFront(guild, member, track, args, channel);
             if (result == null)
             {
-                output.editMessage(FormatUtil.filter(bot.getConfig().getWarning() + " " + musicService.formatTooLongError(track)));
+                output.editMessage(FormatUtil.filter(bot.getConfig().getWarning() + " " + trackEnqueuer.formatTooLongError(track)));
                 return;
             }
 

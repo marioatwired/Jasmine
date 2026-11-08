@@ -24,6 +24,7 @@ import net.dv8tion.jda.api.OnlineStatus;
  *
  * @author John Grosh <john.a.grosh@gmail.com>
  */
+@SuppressWarnings("deprecation") // JDA-Chewtils has no DM context equivalent for text commands yet.
 public class SetstatusCmd extends OwnerCommand
 {
     public SetstatusCmd(Bot bot)

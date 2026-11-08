@@ -118,7 +118,7 @@ public class SearchSlashCmd extends MusicSlashCommand
                             EmbedBuilder embed = new EmbedBuilder()
                                     .setTitle("Search Results for: " + query)
                                     .setDescription(description.toString())
-                                    .setColor(event.getMember().getColor())
+                                    .setColor(event.getMember().getColors().getPrimary())
                                     .setFooter("Select a track from the menu below");
 
                             hook.editOriginalEmbeds(embed.build())

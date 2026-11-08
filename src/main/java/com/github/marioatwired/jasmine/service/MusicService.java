@@ -28,7 +28,6 @@ import com.github.marioatwired.jasmine.service.dto.PlaylistTracksPageInfo;
 import com.github.marioatwired.jasmine.service.dto.QueueInfo;
 import com.github.marioatwired.jasmine.service.dto.TrackAddResult;
 import com.github.marioatwired.jasmine.service.dto.VolumeResult;
-import com.github.marioatwired.jasmine.settings.QueueType;
 import com.github.marioatwired.jasmine.settings.RepeatMode;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.JDA;
@@ -41,27 +40,32 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 
 /**
- * Facade for music operations. Playback and queue handling live in {@link PlayerService};
- * playlists, history, and now-playing formatting have their own services.
+ * Facade for music operations. Playback control lives in {@link PlayerService};
+ * queue mutation lives in {@link QueueService}; playlists, history, and
+ * now-playing formatting have their own services.
  */
 public class MusicService
 {
-    public static final String HISTORY_DISABLED_MESSAGE =
-            "Playback history is disabled by config (playback.maxHistorySize = 0).";
-
     private static final Logger LOG = LoggerFactory.getLogger(MusicService.class);
 
     private final PlayerService playerService;
+    private final QueueService queueService;
     private final NowPlayingService nowPlayingService;
     private final HistoryService historyService;
     private final PlaylistService playlistService;
 
     public MusicService(Bot bot)
     {
-        this.playerService = new PlayerService(bot, this);
+        this(bot, new PlayerService(bot));
+    }
+
+    public MusicService(Bot bot, PlayerService playerService)
+    {
+        this.playerService = playerService;
+        this.queueService = new QueueService(bot);
         this.nowPlayingService = new NowPlayingService(bot);
-        this.historyService = new HistoryService(bot, this);
-        this.playlistService = new PlaylistService(bot, this);
+        this.historyService = new HistoryService(bot, playerService);
+        this.playlistService = new PlaylistService(bot, playerService);
         LOG.info("MusicService initialized");
     }
 
@@ -153,7 +157,7 @@ public class MusicService
 
     public void shuffle(Guild guild, Member member, int startIndex, OutputAdapter output)
     {
-        playerService.shuffle(guild, member, startIndex, output);
+        queueService.shuffle(guild, member, startIndex, output);
     }
 
     /**
@@ -165,7 +169,7 @@ public class MusicService
      */
     public int shuffleUserTracks(Guild guild, long userId)
     {
-        return playerService.shuffleUserTracks(guild, userId);
+        return queueService.shuffleUserTracks(guild, userId);
     }
 
     public void cycleRepeatMode(Guild guild, Member member, OutputAdapter output)
@@ -303,12 +307,12 @@ public class MusicService
 
     public void removeTrack(Guild guild, Member member, int position, OutputAdapter output)
     {
-        playerService.removeTrack(guild, member, position, output);
+        queueService.removeTrack(guild, member, position, output);
     }
 
     public void removeAllTracks(Guild guild, Member member, OutputAdapter output)
     {
-        playerService.removeAllTracks(guild, member, output);
+        queueService.removeAllTracks(guild, member, output);
     }
 
     /**
@@ -320,7 +324,7 @@ public class MusicService
      */
     public int removeAllTracksByUser(Guild guild, long userId)
     {
-        return playerService.removeAllTracksByUser(guild, userId);
+        return queueService.removeAllTracksByUser(guild, userId);
     }
 
     /**
@@ -331,12 +335,12 @@ public class MusicService
      */
     public boolean isQueueEmpty(Guild guild)
     {
-        return playerService.isQueueEmpty(guild);
+        return queueService.isQueueEmpty(guild);
     }
 
     public void moveTrack(Guild guild, Member member, int from, int to, OutputAdapter output)
     {
-        playerService.moveTrack(guild, member, from, to, output);
+        queueService.moveTrack(guild, member, from, to, output);
     }
 
     /**
@@ -350,7 +354,7 @@ public class MusicService
      */
     public void playNext(Guild guild, Member member, int position, OutputAdapter output)
     {
-        playerService.playNext(guild, member, position, output);
+        queueService.playNext(guild, member, position, output);
     }
 
     /**
@@ -378,7 +382,7 @@ public class MusicService
      */
     public String moveTrackPosition(Guild guild, int from, int to)
     {
-        return playerService.moveTrackPosition(guild, from, to);
+        return queueService.moveTrackPosition(guild, from, to);
     }
 
     /**
@@ -390,7 +394,7 @@ public class MusicService
      */
     public boolean isValidQueuePosition(Guild guild, int position)
     {
-        return playerService.isValidQueuePosition(guild, position);
+        return queueService.isValidQueuePosition(guild, position);
     }
 
     public void skipTo(Guild guild, Member member, int position, OutputAdapter output)
@@ -419,7 +423,7 @@ public class MusicService
      */
     public int getQueueSize(Guild guild)
     {
-        return playerService.getQueueSize(guild);
+        return queueService.getQueueSize(guild);
     }
 
     // ========== Now Playing ==========

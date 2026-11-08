@@ -15,9 +15,6 @@
  */
 package com.github.marioatwired.jasmine.testutil.commands;
 
-import com.jagrosh.jdautilities.command.CommandClient;
-import com.jagrosh.jdautilities.command.SlashCommandEvent;
-import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.BotConfig;
 import com.github.marioatwired.jasmine.audio.AudioHandler;
@@ -28,11 +25,15 @@ import com.github.marioatwired.jasmine.service.MusicService;
 import com.github.marioatwired.jasmine.service.SearchService;
 import com.github.marioatwired.jasmine.settings.Settings;
 import com.github.marioatwired.jasmine.settings.SettingsManager;
+import com.jagrosh.jdautilities.command.CommandClient;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
+import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.RoleColors;
 import net.dv8tion.jda.api.entities.SelfMember;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -215,7 +216,7 @@ public class SlashCommandTestFixture
         // Member/User relationships
         when(member.getUser()).thenReturn(user);
         when(user.getIdLong()).thenReturn(USER_ID);
-        when(member.getColor()).thenReturn(null);
+        when(member.getColors()).thenReturn(RoleColors.DEFAULT);
 
         // Reply action chain
         when(event.reply(anyString())).thenReturn(replyAction);

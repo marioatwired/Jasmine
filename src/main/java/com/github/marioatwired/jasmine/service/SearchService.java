@@ -41,10 +41,12 @@ public class SearchService
     private static final Logger LOG = LoggerFactory.getLogger(SearchService.class);
 
     private final Bot bot;
+    private final TrackEnqueuer trackEnqueuer;
 
-    public SearchService(Bot bot)
+    public SearchService(Bot bot, TrackEnqueuer trackEnqueuer)
     {
         this.bot = bot;
+        this.trackEnqueuer = trackEnqueuer;
         LOG.info("SearchService initialized");
     }
 
@@ -154,15 +156,13 @@ public class SearchService
             LOG.debug("Search result - single track: guild={}, track=\"{}\"",
                     guild.getId(), track.getInfo().title);
 
-            MusicService musicService = bot.getMusicService();
-
-            // Use shared track operations from MusicService
-            TrackAddResult result = musicService.addTrackToQueue(guild, member, track, query, channel);
+            // Use shared track operations from PlayerService
+            TrackAddResult result = trackEnqueuer.addTrackToQueue(guild, member, track, query, channel);
             if (result == null)
             {
                 LOG.warn("Search track rejected (too long): guild={}, track=\"{}\"",
                         guild.getId(), track.getInfo().title);
-                callback.onLoadFailed(musicService.formatTooLongError(track));
+                callback.onLoadFailed(trackEnqueuer.formatTooLongError(track));
                 return;
             }
 

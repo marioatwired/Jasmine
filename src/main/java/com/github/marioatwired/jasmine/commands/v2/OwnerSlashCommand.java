@@ -30,7 +30,6 @@ public abstract class OwnerSlashCommand extends SlashCommand
     public OwnerSlashCommand(Bot bot)
     {
         this.bot = bot;
-        this.guildOnly = true;
         this.category = new Category("Owner");
     }
 

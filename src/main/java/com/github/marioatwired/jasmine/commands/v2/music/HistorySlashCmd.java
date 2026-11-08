@@ -18,6 +18,7 @@ package com.github.marioatwired.jasmine.commands.v2.music;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v2.MusicSlashCommand;
 import com.github.marioatwired.jasmine.listener.interaction.PaginatedListComponents;
+import com.github.marioatwired.jasmine.service.HistoryService;
 import com.github.marioatwired.jasmine.service.MusicService;
 import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
 import com.github.marioatwired.jasmine.utils.PaginatedListEmbedUtil;
@@ -72,7 +73,7 @@ public class HistorySlashCmd extends MusicSlashCommand
         }
         if (historyInfo.isDisabled())
         {
-            event.reply(event.getClient().getWarning() + " " + MusicService.HISTORY_DISABLED_MESSAGE).setEphemeral(true).queue();
+            event.reply(event.getClient().getWarning() + " " + HistoryService.HISTORY_DISABLED_MESSAGE).setEphemeral(true).queue();
             return;
         }
         if (historyInfo.isEmpty())
@@ -90,7 +91,7 @@ public class HistorySlashCmd extends MusicSlashCommand
         long userId = event.getUser().getIdLong();
         int tracksOnPage = getTracksOnPage(page, historyInfo.tracks.length);
 
-        MessageEmbed embed = buildHistoryEmbed(historyInfo, page, totalPages, 0, event.getMember().getColor());
+        MessageEmbed embed = buildHistoryEmbed(historyInfo, page, totalPages, 0, event.getMember().getColors().getPrimary());
         List<ActionRow> components = buildHistoryComponents(page, totalPages, tracksOnPage, 0, userId);
 
         event.replyEmbeds(embed).setComponents(components).queue();

@@ -15,10 +15,10 @@
  */
 package com.github.marioatwired.jasmine.commands.v1.music;
 
-import com.jagrosh.jdautilities.command.CommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.MusicCommand;
 import com.github.marioatwired.jasmine.commands.v2.music.PlaylistsSlashCmd;
+import com.jagrosh.jdautilities.command.CommandEvent;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
@@ -36,7 +36,6 @@ public class PlaylistsCmd extends MusicCommand
         this.name = "playlists";
         this.help = "shows the available playlists";
         this.aliases = bot.getConfig().getAliases(this.name);
-        this.guildOnly = true;
         this.beListening = false;
         this.beListening = false;
     }
@@ -57,7 +56,7 @@ public class PlaylistsCmd extends MusicCommand
             int playlistsOnPage = PlaylistsSlashCmd.getPlaylistsOnPage(page, list.size());
             long userId = event.getAuthor().getIdLong();
             var member = event.getMember();
-            var color = member != null ? member.getColor() : event.getSelfMember().getColor();
+            var color = member != null ? member.getColors().getPrimary() : event.getSelfMember().getColors().getPrimary();
 
             var embed = PlaylistsSlashCmd.buildPlaylistsEmbed(list, page, totalPages, 0, color);
             var components = PlaylistsSlashCmd.buildPlaylistsComponents(page, totalPages, playlistsOnPage, 0, userId);

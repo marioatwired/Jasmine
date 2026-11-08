@@ -15,16 +15,18 @@
  */
 package com.github.marioatwired.jasmine.commands.v1.dj;
 
-import com.jagrosh.jdautilities.command.CommandEvent;
-import com.jagrosh.jdautilities.commons.utils.FinderUtil;
-import com.jagrosh.jdautilities.menu.OrderedMenu;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.DJCommand;
 import com.github.marioatwired.jasmine.service.MusicService;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
+import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.commons.utils.FinderUtil;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -74,24 +76,54 @@ public class ForceRemoveCmd extends DJCommand
         }
         else if (found.size() > 1)
         {
-            OrderedMenu.Builder builder = new OrderedMenu.Builder();
+            StringSelectMenu.Builder menu = StringSelectMenu.create("forceremove_select_" + event.getAuthor().getId())
+                    .setPlaceholder("Select a user")
+                    .setMinValues(1)
+                    .setMaxValues(1);
             for (int i = 0; i < found.size() && i < 4; i++)
             {
                 Member member = found.get(i);
-                builder.addChoice("**" + member.getUser().getName() + "**#" + member.getUser().getDiscriminator());
+                menu.addOption(member.getUser().getName(), String.valueOf(member.getIdLong()),
+                        "Remove their entries from the queue");
             }
 
-            builder
-                    .setSelection((msg, i) -> removeAllEntries(found.get(i - 1).getUser(), event))
-                    .setText("Found multiple users:")
-                    .setColor(event.getSelfMember().getColor())
-                    .useNumbers()
-                    .setUsers(event.getAuthor())
-                    .useCancelButton(true)
-                    .setCancel((msg) -> {})
-                    .setEventWaiter(bot.getWaiter())
-                    .setTimeout(1, TimeUnit.MINUTES)
-                    .build().display(event.getChannel());
+            event.getChannel().sendMessage("Found multiple users:")
+                    .setComponents(ActionRow.of(menu.build()))
+                    .queue(msg -> bot.getWaiter().waitForEvent(
+                            StringSelectInteractionEvent.class,
+                            e -> e.getMessageId().equals(msg.getId())
+                                    && e.getUser().getIdLong() == event.getAuthor().getIdLong(),
+                            e ->
+                            {
+                                long selectedId;
+                                try
+                                {
+                                    selectedId = Long.parseLong(e.getValues().get(0));
+                                }
+                                catch (NumberFormatException ex)
+                                {
+                                    e.editMessage(event.getClient().getError() + " Invalid selection.")
+                                            .setComponents().queue();
+                                    return;
+                                }
+
+                                Member target = found.stream()
+                                        .filter(member -> member.getIdLong() == selectedId)
+                                        .findFirst()
+                                        .orElse(null);
+                                if (target == null)
+                                {
+                                    e.editMessage(event.getClient().getError() + " User no longer available.")
+                                            .setComponents().queue();
+                                    return;
+                                }
+
+                                e.editMessage("Selected " + FormatUtil.formatUsername(target.getUser()) + ".")
+                                        .setComponents().queue();
+                                removeAllEntries(target.getUser(), event);
+                            },
+                            1, TimeUnit.MINUTES,
+                            () -> msg.editMessage("Selection timed out.").setComponents().queue()));
 
             return;
         }

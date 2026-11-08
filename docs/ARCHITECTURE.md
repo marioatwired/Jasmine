@@ -13,7 +13,8 @@ Presentation
                   |
 Business logic
   MusicService (facade)
-    -> PlayerService          playback control and queue operations
+    -> PlayerService          playback control, track loading, and track enqueue
+    -> QueueService           queue inspection, removal, movement, and shuffle
     -> PlaylistService        saved playlists, favorites, and playlist orchestration
     -> PlaylistDraftService   interactive playlist draft state and CRUD
     -> PlaylistPreviewService playlist previews and paginated track views
@@ -30,7 +31,9 @@ Infrastructure
 Commands and GUI call the same services. Services talk to `AudioHandler` and the
 per-guild `Settings`; they do not depend on JDA command types directly. The
 `OutputAdapter` abstraction keeps a service call independent of whether the
-response is a text message or a slash-command reply.
+response is a text message or a slash-command reply. `TrackEnqueuer` is the
+narrow interface used by audio handlers and history/playlist/search services
+that need to add tracks without depending on the whole `MusicService` facade.
 
 ## Packages
 
@@ -47,7 +50,8 @@ response is a text message or a slash-command reply.
 | `listener` | JDA listeners for voice state, now-playing cleanup, playback buttons, queue/history/playlist/settings interactions, and startup lifecycle. |
 | `playlist` | Playlist parsing and storage. |
 | `queue` | `AbstractQueue`, `LinearQueue`, `FairQueue`, `PlaybackHistory`. |
-| `service` | `MusicService` facade; `PlayerService`, `PlaylistService`, `PlaylistDraftService`, `PlaylistPreviewService`, `HistoryService`, `NowPlayingService`; `SearchService`; audio load result handlers. |
+| `service` | `MusicService` facade; `PlayerService`, `QueueService`, `PlaylistService`, `PlaylistDraftService`, `PlaylistPreviewService`, `HistoryService`, `NowPlayingService`; `SearchService`; `OutputAdapter`, `TrackEnqueuer`; audio load result handlers. |
+| `service.dto` | DTOs shared by the facade, services, commands, listeners, and GUI. |
 | `settings` | Per-guild settings and JSON persistence. |
 | `utils` | Formatting, proxy, YouTube OAuth, console redirection, instance lock. |
 
@@ -65,7 +69,8 @@ main()
        -> PlayerManager
        -> NowPlayingHandler
        -> AloneInVoiceHandler
-       -> MusicService
+       -> PlayerService
+       -> MusicService (facade)
        -> SearchService
        -> YoutubeOauth2TokenHandler
   -> GUI (optional)
@@ -86,11 +91,15 @@ User command / slash command
   -> PlayerManager.loadItemOrdered()
   -> Lavaplayer source manager
   -> AudioLoadResultHandlers
+  -> TrackEnqueuer (PlayerService)
   -> AudioHandler.addTrack()
   -> AudioPlayer.playTrack()
   -> NativeAudioSendFactory (udpqueue)
   -> Discord voice
 ```
+
+Queue inspection and mutation follow the same facade, then go to
+`QueueService` and the guild's `AudioHandler` queue.
 
 Each guild has its own `AudioHandler`, queue, and `Settings`. `AudioHandler`
 extends Lavaplayer's `AudioEventAdapter` to drive track start/end, now-playing
@@ -107,10 +116,12 @@ commands.
 ## Service decomposition
 
 `MusicService` is a thin facade kept for command/listener compatibility. It
-owns the shared DTOs and delegates to focused services:
+delegates to focused services and owns no service-layer business logic:
 
-- `PlayerService`: playback control, queue mutation, volume, repeat, seek, skip,
-  shuffle, stop, pause, and track-add helpers.
+- `PlayerService`: playback control, track loading, enqueueing, volume, repeat,
+  seek, skip, stop, pause, and play-now/skip-to transitions.
+- `QueueService`: queue inspection, removal, movement, shuffle, and queue-size
+  queries.
 - `PlaylistService`: saved playlist reads/writes, favorites, playlist queue/play
   operations, and history-to-playlist export.
 - `PlaylistDraftService`: interactive playlist draft state, mutations, saves, and
@@ -119,9 +130,10 @@ owns the shared DTOs and delegates to focused services:
 - `HistoryService`: history view data plus queue/play operations from history.
 - `NowPlayingService`: now-playing and queue view data formatting.
 
-`PlaylistService` and `HistoryService` call back through the `MusicService`
-facade for shared queue behavior. This keeps the public command-facing API stable
-while the implementation is split.
+`PlaylistService`, `HistoryService`, `SearchService`, and
+`AudioLoadResultHandlers` receive `TrackEnqueuer` directly. `PlaylistService`
+and `HistoryService` also receive focused collaborators instead of the facade.
+The facade is therefore an entry point, not a dependency of the service layer.
 
 ## Commands
 
@@ -183,20 +195,22 @@ Runtime files are ignored by git.
 
 `MusicServiceTest` exercises the facade and the extracted playback, queue,
 history, playlist, volume, repeat, shuffle, skip, stop, and pause behavior.
+`PlayerServiceTest`, `QueueServiceTest`, `PlaylistDraftServiceTest`, and
+`PlaylistPreviewServiceTest` cover the focused services directly.
 Config tests cover legacy migration, rendering, diagnostics, validation, and
 file updates. Listener tests use Mockito and the fixtures under `testutil`.
 
 ## Known technical debt
 
-- `PlayerService` is still relatively large; further extraction is possible once
-  its use cases stabilize.
+- `PlayerService` is still a large coordinator for playback and track loading;
+  further extraction is possible once its use cases stabilize.
 - `PlaylistLoader` and `PlaylistsInteractionListener` are large and mix storage,
   parsing, and UI state.
 - The v1 and v2 command layers duplicate some presentation logic.
 - Performance monitoring singletons are convenient but harder to test than
   injected instances.
-- `MusicService` exposes several result DTOs as nested classes; some can become
-  records or move to a dedicated package.
+- Remaining JDA-Chewtils deprecations (`guildOnly`, `OrderedMenu`) need an
+  upstream-compatible interaction migration.
 
 These are refactors, not behavior changes. Keep tests green while addressing
 them.

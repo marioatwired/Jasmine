@@ -179,7 +179,7 @@ public class QueueInteractionListener extends ListenerAdapter {
                 }
             }
             MessageEmbed embed = QueueSlashCmd.buildQueueEmbed(queueInfo, page, totalPages, selectedTrack,
-                    event.getMember().getColor());
+                    event.getMember().getColors().getPrimary());
             event.editMessageEmbeds(embed)
                     .setComponents(ActionRow.of(menuBuilder.build()))
                     .queue();
@@ -249,7 +249,7 @@ public class QueueInteractionListener extends ListenerAdapter {
         int tracksOnPage = QueueSlashCmd.getTracksOnPage(safePage, queueInfo.tracks.length);
 
         MessageEmbed embed = QueueSlashCmd.buildQueueEmbed(queueInfo, safePage, totalPages, 0,
-                event.getMember().getColor());
+                event.getMember().getColors().getPrimary());
         List<ActionRow> components = QueueSlashCmd.buildQueueComponents(safePage, totalPages, tracksOnPage, 0, userId);
 
         event.editMessageEmbeds(embed).setComponents(components).queue();
@@ -259,7 +259,7 @@ public class QueueInteractionListener extends ListenerAdapter {
                                   int page, int totalPages, int selectedTrack, long userId) {
         int tracksOnPage = QueueSlashCmd.getTracksOnPage(page, queueInfo.tracks.length);
         MessageEmbed embed = QueueSlashCmd.buildQueueEmbed(queueInfo, page, totalPages, selectedTrack,
-                event.getMember().getColor());
+                event.getMember().getColors().getPrimary());
         List<ActionRow> components = QueueSlashCmd.buildQueueComponents(page, totalPages, tracksOnPage, selectedTrack, userId);
         event.editMessageEmbeds(embed).setComponents(components).queue();
     }

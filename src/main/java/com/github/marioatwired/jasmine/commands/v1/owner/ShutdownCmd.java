@@ -23,6 +23,7 @@ import com.github.marioatwired.jasmine.commands.v1.OwnerCommand;
  *
  * @author John Grosh <john.a.grosh@gmail.com>
  */
+@SuppressWarnings("deprecation") // JDA-Chewtils has no DM context equivalent for text commands yet.
 public class ShutdownCmd extends OwnerCommand
 {
     private final Bot bot;

@@ -15,7 +15,6 @@
  */
 package com.github.marioatwired.jasmine.testutil.listener;
 
-import com.jagrosh.jdautilities.command.CommandClient;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.BotConfig;
 import com.github.marioatwired.jasmine.audio.AloneInVoiceHandler;
@@ -28,11 +27,13 @@ import com.github.marioatwired.jasmine.settings.Settings;
 import com.github.marioatwired.jasmine.settings.SettingsManager;
 import com.github.marioatwired.jasmine.testutil.TestConstants;
 import com.github.marioatwired.jasmine.utils.YoutubeOauth2TokenHandler;
+import com.jagrosh.jdautilities.command.CommandClient;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.RoleColors;
 import net.dv8tion.jda.api.entities.SelfMember;
 import net.dv8tion.jda.api.entities.SelfUser;
 import net.dv8tion.jda.api.entities.User;
@@ -47,8 +48,8 @@ import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.events.session.SessionDisconnectEvent;
 import net.dv8tion.jda.api.events.session.ShutdownEvent;
-import net.dv8tion.jda.api.requests.CloseCode;
 import net.dv8tion.jda.api.managers.AudioManager;
+import net.dv8tion.jda.api.requests.CloseCode;
 import net.dv8tion.jda.api.requests.restaction.CacheRestAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import net.dv8tion.jda.api.utils.cache.SnowflakeCacheView;
@@ -220,6 +221,8 @@ public class ListenerTestFixture
         when(member.getUser()).thenReturn(user);
         when(member.getGuild()).thenReturn(guild);
         when(member.getIdLong()).thenReturn(USER_ID);
+        when(member.getColors()).thenReturn(RoleColors.DEFAULT);
+        when(selfMember.getColors()).thenReturn(RoleColors.DEFAULT);
         when(user.getIdLong()).thenReturn(USER_ID);
         when(user.getId()).thenReturn(String.valueOf(USER_ID));
         when(user.getName()).thenReturn("TestUser");

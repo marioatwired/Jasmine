@@ -58,14 +58,14 @@ public class PlaylistService
             System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
 
     private final Bot bot;
-    private final MusicService musicService;
+    private final TrackEnqueuer trackEnqueuer;
     private final PlaylistDraftService playlistDraftService;
     private final PlaylistPreviewService playlistPreviewService;
 
-    public PlaylistService(Bot bot, MusicService musicService)
+    public PlaylistService(Bot bot, TrackEnqueuer trackEnqueuer)
     {
         this.bot = bot;
-        this.musicService = musicService;
+        this.trackEnqueuer = trackEnqueuer;
         this.playlistDraftService = new PlaylistDraftService(bot);
         this.playlistPreviewService = new PlaylistPreviewService(bot);
     }
@@ -87,18 +87,18 @@ public class PlaylistService
 
     private boolean isTooLong(AudioTrack track)
     {
-        return musicService.isTooLong(track);
+        return trackEnqueuer.isTooLong(track);
     }
 
     private String formatTooLongError(AudioTrack track)
     {
-        return musicService.formatTooLongError(track);
+        return trackEnqueuer.formatTooLongError(track);
     }
 
     private TrackAddResult addTrackToFront(Guild guild, Member member, AudioTrack track,
                                            String queryArgs, TextChannel channel)
     {
-        return musicService.addTrackToFront(guild, member, track, queryArgs, channel);
+        return trackEnqueuer.addTrackToFront(guild, member, track, queryArgs, channel);
     }
 
     // ========== Playlist and favorites operations ==========
@@ -584,7 +584,7 @@ public class PlaylistService
     {
         if (history.getMaxSize() == 0)
         {
-            output.replyError(MusicService.HISTORY_DISABLED_MESSAGE);
+            output.replyError(HistoryService.HISTORY_DISABLED_MESSAGE);
             return false;
         }
         return true;

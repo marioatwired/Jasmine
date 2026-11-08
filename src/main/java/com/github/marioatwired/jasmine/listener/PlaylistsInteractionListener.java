@@ -575,7 +575,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
     {
         int playlistsOnPage = PlaylistsSlashCmd.getPlaylistsOnPage(page, playlists.size());
         MessageEmbed embed = PlaylistsSlashCmd.buildPlaylistsEmbed(playlists, page, totalPages, selectedIndex,
-                event.getMember().getColor());
+                event.getMember().getColors().getPrimary());
         List<ActionRow> components = PlaylistsSlashCmd.buildPlaylistsComponents(page, totalPages, playlistsOnPage, selectedIndex, userId);
         event.editMessageEmbeds(embed).setComponents(components).queue();
     }
@@ -668,7 +668,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                     int safeSelected = (selectedTrack >= firstOnPage && selectedTrack <= lastOnPage) ? selectedTrack : 0;
 
                     java.awt.Color color = member != null
-                            ? member.getColor()
+                            ? member.getColors().getPrimary()
                             : null;
                     MessageEmbed embed = PlaylistsSlashCmd.buildPlaylistTracksEmbed(
                             result.playlistName, result.totalItems, safePage, totalPages, result.formattedLines,
@@ -710,7 +710,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                             result.formattedLines,
                             safeSelected,
                             result.dirty,
-                            event.getMember() != null ? event.getMember().getColor() : null
+                            event.getMember() != null ? event.getMember().getColors().getPrimary() : null
                     );
 
                     StringSelectMenu.Builder menuBuilder = StringSelectMenu

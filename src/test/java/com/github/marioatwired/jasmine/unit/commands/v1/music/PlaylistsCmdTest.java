@@ -22,6 +22,7 @@ import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
 import com.jagrosh.jdautilities.command.CommandClient;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.RoleColors;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +62,7 @@ class PlaylistsCmdTest
         when(event.getAuthor()).thenReturn(user);
         when(user.getIdLong()).thenReturn(42L);
         when(event.getMember()).thenReturn(member);
-        when(member.getColor()).thenReturn(null);
+        when(member.getColors()).thenReturn(RoleColors.DEFAULT);
 
         command = new PlaylistsCmd(bot);
     }

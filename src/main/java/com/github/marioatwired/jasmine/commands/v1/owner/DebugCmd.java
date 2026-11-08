@@ -43,6 +43,7 @@ import net.dv8tion.jda.api.utils.FileUpload;
  *
  * @author John Grosh (john.a.grosh@gmail.com)
  */
+@SuppressWarnings("deprecation") // JDA-Chewtils has no DM context equivalent for text commands yet.
 public class DebugCmd extends OwnerCommand 
 {
     private static final String[] PROPERTIES = {

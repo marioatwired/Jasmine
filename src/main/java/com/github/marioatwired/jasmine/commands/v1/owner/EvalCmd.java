@@ -27,6 +27,7 @@ import javax.script.ScriptEngineManager;
  *
  * @author John Grosh (jagrosh)
  */
+@SuppressWarnings("deprecation") // JDA-Chewtils has no DM context equivalent for text commands yet.
 public class EvalCmd extends OwnerCommand 
 {
     private final Bot bot;

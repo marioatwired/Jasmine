@@ -34,6 +34,5 @@ public abstract class AdminCommand extends Command
                 return true;
             return event.getMember().hasPermission(Permission.MANAGE_SERVER);
         });
-        this.guildOnly = true;
     }
 }

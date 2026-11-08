@@ -37,7 +37,6 @@ public abstract class MusicCommand extends Command
     public MusicCommand(Bot bot)
     {
         this.bot = bot;
-        this.guildOnly = true;
         this.category = new Category("Music");
     }
     

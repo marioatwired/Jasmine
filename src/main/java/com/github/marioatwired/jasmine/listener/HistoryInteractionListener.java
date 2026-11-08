@@ -20,6 +20,7 @@ import com.github.marioatwired.jasmine.commands.v2.music.HistorySlashCmd;
 import com.github.marioatwired.jasmine.listener.interaction.ComponentIdParsers;
 import com.github.marioatwired.jasmine.listener.interaction.InteractionGuards;
 import com.github.marioatwired.jasmine.listener.interaction.OutputAdapters;
+import com.github.marioatwired.jasmine.service.HistoryService;
 import com.github.marioatwired.jasmine.service.MusicService;
 import com.github.marioatwired.jasmine.service.OutputAdapter;
 import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
@@ -95,7 +96,7 @@ public class HistoryInteractionListener extends ListenerAdapter {
             return;
         }
         if (historyInfo.isDisabled()) {
-            event.editMessage(MusicService.HISTORY_DISABLED_MESSAGE).setEmbeds().setComponents().queue();
+            event.editMessage(HistoryService.HISTORY_DISABLED_MESSAGE).setEmbeds().setComponents().queue();
             return;
         }
         if (historyInfo.isEmpty()) {
@@ -150,7 +151,7 @@ public class HistoryInteractionListener extends ListenerAdapter {
             if (newInfo == null) {
                 event.editMessage("Playback history is now empty!").setEmbeds().setComponents().queue();
             } else if (newInfo.isDisabled()) {
-                event.editMessage(MusicService.HISTORY_DISABLED_MESSAGE).setEmbeds().setComponents().queue();
+                event.editMessage(HistoryService.HISTORY_DISABLED_MESSAGE).setEmbeds().setComponents().queue();
             } else if (newInfo.isEmpty()) {
                 event.editMessage("Playback history is now empty!").setEmbeds().setComponents().queue();
             } else {
@@ -173,7 +174,7 @@ public class HistoryInteractionListener extends ListenerAdapter {
             if (newInfo == null) {
                 event.editMessage("Playback history is now empty!").setEmbeds().setComponents().queue();
             } else if (newInfo.isDisabled()) {
-                event.editMessage(MusicService.HISTORY_DISABLED_MESSAGE).setEmbeds().setComponents().queue();
+                event.editMessage(HistoryService.HISTORY_DISABLED_MESSAGE).setEmbeds().setComponents().queue();
             } else if (newInfo.isEmpty()) {
                 event.editMessage("Playback history is now empty!").setEmbeds().setComponents().queue();
             } else {
@@ -191,7 +192,7 @@ public class HistoryInteractionListener extends ListenerAdapter {
             if (newInfo == null) {
                 event.editMessage("Playback history is now empty!").setEmbeds().setComponents().queue();
             } else if (newInfo.isDisabled()) {
-                event.editMessage(MusicService.HISTORY_DISABLED_MESSAGE).setEmbeds().setComponents().queue();
+                event.editMessage(HistoryService.HISTORY_DISABLED_MESSAGE).setEmbeds().setComponents().queue();
             } else if (newInfo.isEmpty()) {
                 event.editMessage("Playback history is now empty!").setEmbeds().setComponents().queue();
             } else {
@@ -251,7 +252,7 @@ public class HistoryInteractionListener extends ListenerAdapter {
                                     int page, int totalPages, int selectedTrack, long userId) {
         int tracksOnPage = HistorySlashCmd.getTracksOnPage(page, historyInfo.tracks.length);
         MessageEmbed embed = HistorySlashCmd.buildHistoryEmbed(historyInfo, page, totalPages, selectedTrack,
-                event.getMember().getColor());
+                event.getMember().getColors().getPrimary());
         List<ActionRow> components = HistorySlashCmd.buildHistoryComponents(page, totalPages, tracksOnPage, selectedTrack, userId);
         event.editMessageEmbeds(embed).setComponents(components).queue();
     }

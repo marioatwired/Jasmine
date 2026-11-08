@@ -48,7 +48,6 @@ public class SettingsCmd extends Command
         this.name = "settings";
         this.help = "shows the bots settings (interactive panel for admins)";
         this.aliases = bot.getConfig().getAliases(this.name);
-        this.guildOnly = true;
     }
 
     @Override

@@ -101,7 +101,7 @@ public class QueueSlashCmd extends MusicSlashCommand
         long userId = event.getUser().getIdLong();
         int tracksOnPage = getTracksOnPage(page, queueInfo.tracks.length);
 
-        MessageEmbed embed = buildQueueEmbed(queueInfo, page, totalPages, 0, event.getMember().getColor());
+        MessageEmbed embed = buildQueueEmbed(queueInfo, page, totalPages, 0, event.getMember().getColors().getPrimary());
         List<ActionRow> components = buildQueueComponents(page, totalPages, tracksOnPage, 0, userId);
 
         event.replyEmbeds(embed).setComponents(components).queue();
