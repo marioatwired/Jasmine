@@ -5,6 +5,23 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Extracted `FavoritesService` and `HistoryPlaylistService` from
+  `PlaylistService`, keeping the public facade and command behavior unchanged.
+- Added a JaCoCo coverage gate for the full project and the `service` package.
+
+### Added
+
+- Direct tests for audio load handlers, text search selection menus, and
+  force-remove selection menus.
+
+### Removed
+
+- Deprecated `MESSAGE_ID` re-exports from the test fixtures.
+
 ## [0.3.0] - 2026-11-08
 
 ### Changed

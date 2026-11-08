@@ -15,7 +15,9 @@ Business logic
   MusicService (facade)
     -> PlayerService          playback control, track loading, and track enqueue
     -> QueueService           queue inspection, removal, movement, and shuffle
-    -> PlaylistService        saved playlists, favorites, and playlist orchestration
+    -> PlaylistService        saved playlist CRUD, queue/play, and orchestration
+    -> FavoritesService       add the current track to Favorites
+    -> HistoryPlaylistService export playback history to a saved playlist
     -> PlaylistDraftService   interactive playlist draft state and CRUD
     -> PlaylistPreviewService playlist previews and paginated track views
     -> HistoryService         history queries and history-to-queue operations
@@ -50,7 +52,7 @@ that need to add tracks without depending on the whole `MusicService` facade.
 | `listener` | JDA listeners for voice state, now-playing cleanup, playback buttons, queue/history/playlist/settings interactions, and startup lifecycle. |
 | `playlist` | Playlist parsing and storage. |
 | `queue` | `AbstractQueue`, `LinearQueue`, `FairQueue`, `PlaybackHistory`. |
-| `service` | `MusicService` facade; `PlayerService`, `QueueService`, `PlaylistService`, `PlaylistDraftService`, `PlaylistPreviewService`, `HistoryService`, `NowPlayingService`; `SearchService`; `OutputAdapter`, `TrackEnqueuer`; audio load result handlers. |
+| `service` | `MusicService` facade; `PlayerService`, `QueueService`, `PlaylistService`, `FavoritesService`, `HistoryPlaylistService`, `PlaylistDraftService`, `PlaylistPreviewService`, `HistoryService`, `NowPlayingService`; `SearchService`; `OutputAdapter`, `TrackEnqueuer`; audio load result handlers. |
 | `service.dto` | DTOs shared by the facade, services, commands, listeners, and GUI. |
 | `settings` | Per-guild settings and JSON persistence. |
 | `utils` | Formatting, proxy, YouTube OAuth, console redirection, instance lock. |
@@ -122,8 +124,10 @@ delegates to focused services and owns no service-layer business logic:
   seek, skip, stop, pause, and play-now/skip-to transitions.
 - `QueueService`: queue inspection, removal, movement, shuffle, and queue-size
   queries.
-- `PlaylistService`: saved playlist reads/writes, favorites, playlist queue/play
-  operations, and history-to-playlist export.
+- `PlaylistService`: saved playlist CRUD, playlist queue/play operations, and
+  orchestration of favorites/history export.
+- `FavoritesService`: adds the currently playing track to the favorites playlist.
+- `HistoryPlaylistService`: exports http(s) playback history to a saved playlist.
 - `PlaylistDraftService`: interactive playlist draft state, mutations, saves, and
   discards.
 - `PlaylistPreviewService`: playlist track previews and paginated track views.
@@ -197,8 +201,12 @@ Runtime files are ignored by git.
 history, playlist, volume, repeat, shuffle, skip, stop, and pause behavior.
 `PlayerServiceTest`, `QueueServiceTest`, `PlaylistDraftServiceTest`, and
 `PlaylistPreviewServiceTest` cover the focused services directly.
+`AudioLoadResultHandlersTest` covers load results and fallback paths.
+`SearchCmdTest` and `ForceRemoveCmdTest` cover the select-menu interaction flows.
 Config tests cover legacy migration, rendering, diagnostics, validation, and
 file updates. Listener tests use Mockito and the fixtures under `testutil`.
+The `coverage` profile enforces a global line-coverage floor and a higher floor
+for the `service` package.
 
 ## Known technical debt
 
