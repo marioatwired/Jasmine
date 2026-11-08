@@ -41,19 +41,19 @@ Headless:
 
 ```bash
 java -Dnogui=true --enable-native-access=ALL-UNNAMED \
-  -jar target/jasmine-0.3.0-All.jar
+  -jar target/jasmine-0.3.1-All.jar
 ```
 
 GUI:
 
 ```bash
-java --enable-native-access=ALL-UNNAMED -jar target/jasmine-0.3.0-All.jar
+java --enable-native-access=ALL-UNNAMED -jar target/jasmine-0.3.1-All.jar
 ```
 
 Generate a default config:
 
 ```bash
-java -jar target/jasmine-0.3.0-All.jar generate-config
+java -jar target/jasmine-0.3.1-All.jar generate-config
 ```
 
 ## Project layout
@@ -154,17 +154,17 @@ The package rename means most upstream patches will need manual adaptation.
 1. Ensure `master` is green: `./mvnw clean verify`.
 2. Update `CHANGELOG.md`.
 3. Set the release version in `pom.xml`.
-4. Commit: `chore: release 0.3.0`.
+4. Commit: `chore: release 0.3.1`.
 5. Create and push the tag:
 
    ```bash
-   git tag v0.3.0
+   git tag v0.3.1
    git push origin master
-   git push origin v0.3.0
+   git push origin v0.3.1
    ```
 
-6. The `Release` workflow builds `Jasmine-0.3.0.jar`, creates the GitHub
-   release, and publishes `ghcr.io/marioatwired/jasmine:0.3.0` and `:latest`.
+6. The `Release` workflow builds `Jasmine-0.3.1.jar`, creates the GitHub
+   release, and publishes `ghcr.io/marioatwired/jasmine:0.3.1` and `:latest`.
 
 Docker images are also published for every push to `master` as `:latest` and
 `:sha-<short>`.
