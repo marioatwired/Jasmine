@@ -265,27 +265,39 @@ public final class QueuePersistenceService
             restoringGuilds.add(guildId);
         }
 
-        List<QueueState.StoredTrack> tracks = saved.orderedTracks().stream()
+        List<QueueState.StoredTrack> queueTracks = saved.orderedTracks().stream()
                 .filter(QueueState.StoredTrack::hasUri)
                 .toList();
-        if (tracks.isEmpty())
+        List<QueueState.StoredTrack> historyTracks = saved.history.stream()
+                .filter(QueueState.StoredTrack::hasUri)
+                .toList();
+        if (queueTracks.isEmpty() && historyTracks.isEmpty())
         {
-            finishRestore(guildId, handler, List.of());
+            finishRestore(guildId, handler, List.of(), List.of());
             return;
         }
 
-        List<CompletableFuture<QueuedTrack>> futures = tracks.stream()
-                .map(track -> loadTrack(guild, track))
-                .toList();
+        List<CompletableFuture<QueuedTrack>> queueFutures = loadTracks(guild, queueTracks);
+        List<CompletableFuture<QueuedTrack>> historyFutures = loadTracks(guild, historyTracks);
+        List<CompletableFuture<QueuedTrack>> allFutures = new ArrayList<>(
+                queueFutures.size() + historyFutures.size());
+        allFutures.addAll(queueFutures);
+        allFutures.addAll(historyFutures);
 
-        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+        CompletableFuture.allOf(allFutures.toArray(CompletableFuture[]::new))
                 .whenComplete((ignored, error) ->
                 {
                     if (error != null)
                         LOG.debug("Queue restore completed with errors for guild {}: {}",
                                 guildId, error.getMessage());
-                    finishRestore(guildId, handler, futures);
+                    finishRestore(guildId, handler, queueFutures, historyFutures);
                 });
+    }
+
+    private List<CompletableFuture<QueuedTrack>> loadTracks(Guild guild,
+                                                            List<QueueState.StoredTrack> tracks)
+    {
+        return tracks.stream().map(track -> loadTrack(guild, track)).toList();
     }
 
     private CompletableFuture<QueuedTrack> loadTrack(Guild guild, QueueState.StoredTrack stored)
@@ -339,29 +351,20 @@ public final class QueuePersistenceService
     }
 
     private void finishRestore(long guildId, AudioHandler handler,
-                               List<CompletableFuture<QueuedTrack>> futures)
+                               List<CompletableFuture<QueuedTrack>> queueFutures,
+                               List<CompletableFuture<QueuedTrack>> historyFutures)
     {
-        List<QueuedTrack> tracks = new ArrayList<>(futures.size());
-        for (CompletableFuture<QueuedTrack> future : futures)
-        {
-            try
-            {
-                QueuedTrack track = future.getNow(null);
-                if (track != null)
-                    tracks.add(track);
-            }
-            catch (RuntimeException ignored)
-            {
-                // A failed future is treated like a track that could not be loaded.
-            }
-        }
+        List<QueuedTrack> queueTracks = loadedTracks(queueFutures);
+        List<QueuedTrack> historyTracks = loadedTracks(historyFutures);
 
         Runnable apply = () ->
         {
             try
             {
-                if (!tracks.isEmpty())
-                    handler.restoreTracks(tracks);
+                if (!historyTracks.isEmpty())
+                    handler.restoreHistory(historyTracks);
+                if (!queueTracks.isEmpty())
+                    handler.restoreTracks(queueTracks);
             }
             catch (RuntimeException ex)
             {
@@ -385,6 +388,25 @@ public final class QueuePersistenceService
         {
             apply.run();
         }
+    }
+
+    private static List<QueuedTrack> loadedTracks(List<CompletableFuture<QueuedTrack>> futures)
+    {
+        List<QueuedTrack> tracks = new ArrayList<>(futures.size());
+        for (CompletableFuture<QueuedTrack> future : futures)
+        {
+            try
+            {
+                QueuedTrack track = future.getNow(null);
+                if (track != null)
+                    tracks.add(track);
+            }
+            catch (RuntimeException ignored)
+            {
+                // A failed future is treated like a track that could not be loaded.
+            }
+        }
+        return tracks;
     }
 
     private static QueuedTrack toQueuedTrack(AudioTrack track, QueueState.StoredTrack stored)
@@ -413,33 +435,61 @@ public final class QueuePersistenceService
                 ? null
                 : toStoredTrack(player.getPlayingTrack(), null);
 
-        List<QueueState.StoredTrack> tracks = new ArrayList<>();
+        List<QueueState.StoredTrack> queueTracks = new ArrayList<>();
+        List<QueueState.StoredTrack> historyTracks = new ArrayList<>();
         var handlerQueue = handler.getQueue();
         if (handlerQueue != null)
         {
-            List<QueuedTrack> queuedTracks;
             try
             {
-                queuedTracks = new ArrayList<>(handlerQueue.getList());
+                queueTracks = snapshotTracks(handlerQueue.getList(), "queue");
             }
             catch (RuntimeException ex)
             {
                 LOG.warn("Could not snapshot a queue while it was changing: {}", ex.getMessage());
-                queuedTracks = List.of();
             }
 
-            for (QueuedTrack queuedTrack : queuedTracks)
+            try
             {
-                if (queuedTrack == null)
-                    continue;
-                QueueState.StoredTrack stored = toStoredTrack(
-                        queuedTrack.getTrack(), queuedTrack.getRequestMetadata());
-                if (stored != null)
-                    tracks.add(stored);
+                var history = handlerQueue.getHistory();
+                if (history != null)
+                    historyTracks = snapshotTracks(history.getList(), "history");
+            }
+            catch (RuntimeException ex)
+            {
+                LOG.warn("Could not snapshot playback history while it was changing: {}",
+                        ex.getMessage());
             }
         }
 
-        return new QueueState.GuildQueue(current, tracks);
+        // The current track is saved separately; keep it out of the history to
+        // avoid replaying it as "previous" immediately after a restart.
+        if (current != null)
+        {
+            String currentUri = current.uri;
+            historyTracks.removeIf(track -> Objects.equals(track.uri, currentUri));
+        }
+
+        return new QueueState.GuildQueue(current, queueTracks, historyTracks);
+    }
+
+    private static List<QueueState.StoredTrack> snapshotTracks(List<QueuedTrack> source,
+                                                               String label)
+    {
+        List<QueuedTrack> tracks = new ArrayList<>(source);
+        List<QueueState.StoredTrack> storedTracks = new ArrayList<>(tracks.size());
+        for (QueuedTrack queuedTrack : tracks)
+        {
+            if (queuedTrack == null)
+                continue;
+            QueueState.StoredTrack stored = toStoredTrack(
+                    queuedTrack.getTrack(), queuedTrack.getRequestMetadata());
+            if (stored != null)
+                storedTracks.add(stored);
+            else
+                LOG.debug("Skipping {} track without a restorable URI", label);
+        }
+        return storedTracks;
     }
 
     private static QueueState.StoredTrack toStoredTrack(AudioTrack track, RequestMetadata fallback)

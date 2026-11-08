@@ -122,16 +122,21 @@ commands.
 ## Queue persistence
 
 `QueuePersistenceService` stores per-guild snapshots in `queuedata.json`. Each
-entry contains the current track, its position, and the pending queue. Tracks are
-stored as URIs plus `RequestMetadata`; Lavaplayer reloads them when the queue is
-restored.
+entry contains the current track, its position, the pending queue, and playback
+history. Tracks are stored as URIs plus `RequestMetadata`; Lavaplayer reloads
+them when the queue is restored. The currently playing track is stored
+separately and omitted from the history snapshot so it is not immediately
+replayed by `/previous` after a restart.
 
 - Snapshots are written atomically every 15 seconds and before shutdown.
-- On `ReadyEvent`, saved queues are restored into their guild handlers. The
-  handler stays idle: Jasmine does not reconnect to voice or start audio.
+- On `ReadyEvent`, saved queues and history are restored into their guild
+  handlers. The handler stays idle: Jasmine does not reconnect to voice or start
+  audio.
 - `/play` with no arguments resumes the first restored track when the player is
-  idle. `/queue` remains available while nothing is playing.
+  idle. `/queue`, `/history`, and `/previous` remain available while nothing is
+  playing.
 - Tracks whose URI can no longer be loaded are skipped and logged.
+- Version 1 state files are still accepted; their history starts empty.
 
 ## Service decomposition
 
@@ -220,8 +225,8 @@ Runtime files are ignored by git.
 history, playlist, volume, repeat, shuffle, skip, stop, and pause behavior.
 `PlayerServiceTest`, `QueueServiceTest`, `PlaylistDraftServiceTest`, and
 `PlaylistPreviewServiceTest` cover the focused services directly.
-`QueuePersistenceServiceTest` covers queue snapshots, restoration, malformed
-state files, and failed track reloads.
+`QueuePersistenceServiceTest` covers queue and history snapshots, restoration,
+malformed state files, and failed track reloads.
 `AudioLoadResultHandlersTest` covers load results and fallback paths.
 `SearchCmdTest` and `ForceRemoveCmdTest` cover the select-menu interaction flows.
 `PlaylistParserTest` covers playlist parsing and shuffle directives.

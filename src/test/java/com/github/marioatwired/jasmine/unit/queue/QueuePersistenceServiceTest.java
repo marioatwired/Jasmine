@@ -23,6 +23,7 @@ import com.github.marioatwired.jasmine.audio.PlayerManager;
 import com.github.marioatwired.jasmine.audio.QueuedTrack;
 import com.github.marioatwired.jasmine.audio.RequestMetadata;
 import com.github.marioatwired.jasmine.queue.AbstractQueue;
+import com.github.marioatwired.jasmine.queue.PlaybackHistory;
 import com.github.marioatwired.jasmine.queue.QueuePersistenceService;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
@@ -55,6 +56,7 @@ class QueuePersistenceServiceTest
     private static final String CURRENT_URI = "https://example.com/current";
     private static final String FIRST_URI = "https://example.com/first";
     private static final String SECOND_URI = "https://example.com/second";
+    private static final String PREVIOUS_URI = "https://example.com/previous";
 
     @TempDir
     Path temporaryDirectory;
@@ -74,13 +76,60 @@ class QueuePersistenceServiceTest
         fixture.service.saveAll();
 
         JsonNode root = new ObjectMapper().readTree(Files.readString(fixture.stateFile));
-        assertTrue(root.has("version"));
+        assertEquals(2, root.path("version").asInt());
         JsonNode guild = root.path("guilds").path(String.valueOf(GUILD_ID));
         assertEquals(CURRENT_URI, guild.path("current").path("uri").asText());
         assertEquals(12_345L, guild.path("current").path("position").asLong());
         assertEquals(2, guild.path("queue").size());
         assertEquals(FIRST_URI, guild.path("queue").get(0).path("uri").asText());
         assertEquals(42L, guild.path("queue").get(0).path("metadata").path("user").path("id").asLong());
+    }
+
+    @Test
+    void saveAllStoresPlaybackHistory() throws Exception
+    {
+        Fixture fixture = new Fixture(temporaryDirectory.resolve("queuedata.json"));
+        QueuedTrack previous = queuedTrack(PREVIOUS_URI, metadata(42L, "query", 99L));
+        when(fixture.history.getList()).thenReturn(List.of(previous));
+
+        fixture.service.saveAll();
+
+        JsonNode root = new ObjectMapper().readTree(Files.readString(fixture.stateFile));
+        JsonNode history = root.path("guilds").path(String.valueOf(GUILD_ID)).path("history");
+        assertEquals(1, history.size());
+        assertEquals(PREVIOUS_URI, history.get(0).path("uri").asText());
+    }
+
+    @Test
+    void saveAllDoesNotStoreCurrentTrackAsHistory() throws Exception
+    {
+        Fixture fixture = new Fixture(temporaryDirectory.resolve("queuedata.json"));
+        QueuedTrack currentHistoryEntry = queuedTrack(CURRENT_URI, metadata(42L, "query", 99L));
+        AudioTrack current = track(CURRENT_URI, 180_000L, true);
+        when(fixture.player.getPlayingTrack()).thenReturn(current);
+        when(fixture.history.getList()).thenReturn(List.of(currentHistoryEntry));
+
+        fixture.service.saveAll();
+
+        JsonNode root = new ObjectMapper().readTree(Files.readString(fixture.stateFile));
+        JsonNode history = root.path("guilds").path(String.valueOf(GUILD_ID)).path("history");
+        assertTrue(history.isEmpty());
+    }
+
+    @Test
+    void saveAllKeepsStateWhenOnlyHistoryRemains() throws Exception
+    {
+        Fixture fixture = new Fixture(temporaryDirectory.resolve("queuedata.json"));
+        QueuedTrack previous = queuedTrack(PREVIOUS_URI, metadata(42L, "query", 99L));
+        when(fixture.history.getList()).thenReturn(List.of(previous));
+
+        fixture.service.saveAll();
+        fixture.service.saveAll();
+
+        JsonNode root = new ObjectMapper().readTree(Files.readString(fixture.stateFile));
+        assertEquals(1, root.path("guilds").size());
+        assertEquals(1, root.path("guilds").path(String.valueOf(GUILD_ID))
+                .path("history").size());
     }
 
     @Test
@@ -153,6 +202,31 @@ class QueuePersistenceServiceTest
         verify(restore.handler).restoreTracks(restore.captor.capture());
         assertEquals(1, restore.captor.getValue().size());
         assertEquals(FIRST_URI, restore.captor.getValue().get(0).getTrack().getInfo().uri);
+    }
+
+    @Test
+    void restoreHistoryAndQueueInSavedOrder()
+    {
+        Fixture fixture = new Fixture(temporaryDirectory.resolve("queuedata.json"));
+        QueuedTrack previous = queuedTrack(PREVIOUS_URI, metadata(42L, "query", 99L));
+        QueuedTrack pending = queuedTrack(FIRST_URI, metadata(42L, "query", 99L));
+        when(fixture.history.getList()).thenReturn(List.of(previous));
+        when(fixture.queue.getList()).thenReturn(List.of(pending));
+        fixture.service.saveAll();
+
+        RestoreFixture restore = new RestoreFixture(fixture.stateFile);
+        restore.configureSuccessfulLoads();
+
+        restore.service.restore(restore.guild, restore.handler);
+
+        verify(restore.handler).restoreHistory(restore.historyCaptor.capture());
+        verify(restore.handler).restoreTracks(restore.captor.capture());
+        assertEquals(PREVIOUS_URI, restore.historyCaptor.getValue().get(0).getTrack().getInfo().uri);
+        assertEquals(FIRST_URI, restore.captor.getValue().get(0).getTrack().getInfo().uri);
+
+        var inOrder = inOrder(restore.handler);
+        inOrder.verify(restore.handler).restoreHistory(anyList());
+        inOrder.verify(restore.handler).restoreTracks(anyList());
     }
 
     @Test
@@ -288,6 +362,8 @@ class QueuePersistenceServiceTest
         private final ScheduledExecutorService threadpool = mock(ScheduledExecutorService.class);
         @SuppressWarnings("unchecked")
         private final AbstractQueue<QueuedTrack> queue = mock(AbstractQueue.class);
+        @SuppressWarnings("unchecked")
+        private final PlaybackHistory<QueuedTrack> history = mock(PlaybackHistory.class);
         private final Path stateFile;
         private final QueuePersistenceService service;
 
@@ -306,6 +382,8 @@ class QueuePersistenceServiceTest
             when(player.getPlayingTrack()).thenReturn(null);
             when(queue.getList()).thenReturn(List.of());
             when(queue.isEmpty()).thenReturn(true);
+            when(queue.getHistory()).thenReturn(history);
+            when(history.getList()).thenReturn(List.of());
             service = new QueuePersistenceService(bot, stateFile);
         }
     }
@@ -324,6 +402,9 @@ class QueuePersistenceServiceTest
         private final QueuePersistenceService service;
         @SuppressWarnings("unchecked")
         private final ArgumentCaptor<List<QueuedTrack>> captor =
+                ArgumentCaptor.forClass((Class<List<QueuedTrack>>) (Class<?>) List.class);
+        @SuppressWarnings("unchecked")
+        private final ArgumentCaptor<List<QueuedTrack>> historyCaptor =
                 ArgumentCaptor.forClass((Class<List<QueuedTrack>>) (Class<?>) List.class);
 
         private RestoreFixture(Path stateFile)

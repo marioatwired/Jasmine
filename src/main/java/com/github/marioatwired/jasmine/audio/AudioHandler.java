@@ -135,6 +135,23 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
 
         LOGGER.info("Restored {} track(s) to the queue", tracks.size());
     }
+
+    /**
+     * Restores previously played tracks without starting playback.
+     * The list must be ordered from most recent to oldest.
+     *
+     * @param tracks tracks to restore into playback history
+     */
+    public void restoreHistory(List<QueuedTrack> tracks)
+    {
+        if (tracks == null || tracks.isEmpty())
+            return;
+
+        for (int i = tracks.size() - 1; i >= 0; i--)
+            queue.addToHistory(tracks.get(i));
+
+        LOGGER.info("Restored {} track(s) to playback history", tracks.size());
+    }
     
     /**
      * Gets the playback history from the queue.
