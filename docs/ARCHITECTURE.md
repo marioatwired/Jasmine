@@ -27,7 +27,7 @@ Business logic
 Infrastructure
   audio (PlayerManager, AudioHandler, queues, monitors)
   config (loader, migration, validation, render)
-  playlist  settings  listener  utils
+  playlist  queue persistence  settings  listener  utils
 ```
 
 Commands and GUI call the same services. Services talk to `AudioHandler` and the
@@ -51,7 +51,7 @@ that need to add tracks without depending on the whole `MusicService` facade.
 | `gui` | Main window, console, settings, status, performance, timeline, and source-health panels. |
 | `listener` | JDA listeners for voice state, now-playing cleanup, playback buttons, queue/history/playlist/settings interactions, and startup lifecycle. |
 | `playlist` | Playlist model, parsing, and file-system storage. |
-| `queue` | `AbstractQueue`, `LinearQueue`, `FairQueue`, `PlaybackHistory`. |
+| `queue` | `AbstractQueue`, `LinearQueue`, `FairQueue`, `PlaybackHistory`, and queue persistence. |
 | `service` | `MusicService` facade; `PlayerService`, `QueueService`, `PlaylistService`, `FavoritesService`, `HistoryPlaylistService`, `PlaylistDraftService`, `PlaylistPreviewService`, `HistoryService`, `NowPlayingService`; `SearchService`; `OutputAdapter`, `TrackEnqueuer`; audio load result handlers. |
 | `service.dto` | DTOs shared by the facade, services, commands, listeners, and GUI. |
 | `settings` | Per-guild settings and JSON persistence. |
@@ -68,6 +68,7 @@ main()
   -> SettingsManager
   -> Bot
        -> PlaylistLoader
+       -> QueuePersistenceService
        -> PlayerManager
        -> NowPlayingHandler
        -> AloneInVoiceHandler
@@ -79,6 +80,9 @@ main()
   -> CommandFactory / SlashCommandRegistry
   -> PlayerManager.init()      (register enabled audio sources)
   -> DiscordService.createJDA()
+  -> StartupLifecycleListener.onReady()
+       -> QueuePersistenceService.start()
+       -> QueuePersistenceService.restoreAll()
 ```
 
 `PlayerManager.init()` is intentionally delayed until logging and the GUI are
@@ -114,6 +118,20 @@ updates, repeat modes, and history.
 
 `PlaybackHistory` stores previous tracks for the `previous` and `history`
 commands.
+
+## Queue persistence
+
+`QueuePersistenceService` stores per-guild snapshots in `queuedata.json`. Each
+entry contains the current track, its position, and the pending queue. Tracks are
+stored as URIs plus `RequestMetadata`; Lavaplayer reloads them when the queue is
+restored.
+
+- Snapshots are written atomically every 15 seconds and before shutdown.
+- On `ReadyEvent`, saved queues are restored into their guild handlers. The
+  handler stays idle: Jasmine does not reconnect to voice or start audio.
+- `/play` with no arguments resumes the first restored track when the player is
+  idle. `/queue` remains available while nothing is playing.
+- Tracks whose URI can no longer be loaded are skipped and logged.
 
 ## Service decomposition
 
@@ -185,6 +203,7 @@ fall back to no-op implementations where possible.
 
 - `config.txt`: application configuration, HOCON.
 - `serversettings.json`: per-guild settings (Jackson).
+- `queuedata.json`: per-guild queue snapshots (Jackson).
 - `Playlists/`: playlist files.
 - `youtubetoken.txt`: optional YouTube OAuth refresh token.
 - `.jasmine.lock`: prevents two instances from using the same directory.
@@ -201,6 +220,8 @@ Runtime files are ignored by git.
 history, playlist, volume, repeat, shuffle, skip, stop, and pause behavior.
 `PlayerServiceTest`, `QueueServiceTest`, `PlaylistDraftServiceTest`, and
 `PlaylistPreviewServiceTest` cover the focused services directly.
+`QueuePersistenceServiceTest` covers queue snapshots, restoration, malformed
+state files, and failed track reloads.
 `AudioLoadResultHandlersTest` covers load results and fallback paths.
 `SearchCmdTest` and `ForceRemoveCmdTest` cover the select-menu interaction flows.
 `PlaylistParserTest` covers playlist parsing and shuffle directives.

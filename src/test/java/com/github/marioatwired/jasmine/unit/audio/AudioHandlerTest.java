@@ -139,6 +139,20 @@ public class AudioHandlerTest extends TestBase {
             assertEquals(0, result);
             assertEquals(2, audioHandler.getQueue().size());
         }
+
+        @Test
+        @DisplayName("restoreTracks() appends tracks without starting playback")
+        public void testRestoreTracksAppendsWithoutPlayback() {
+            QueuedTrack first = mock(QueuedTrack.class);
+            QueuedTrack second = mock(QueuedTrack.class);
+
+            audioHandler.restoreTracks(java.util.List.of(first, second));
+
+            assertEquals(2, audioHandler.getQueue().size());
+            assertSame(first, audioHandler.getQueue().get(0));
+            assertSame(second, audioHandler.getQueue().get(1));
+            verify(audioPlayer, never()).playTrack(any());
+        }
     }
 
     // ==================== Stop and Clear Tests ====================

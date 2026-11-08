@@ -17,9 +17,16 @@ package com.github.marioatwired.jasmine.unit.audio;
 
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.BotConfig;
+import com.github.marioatwired.jasmine.audio.AudioHandler;
 import com.github.marioatwired.jasmine.audio.AudioSource;
 import com.github.marioatwired.jasmine.audio.PlayerManager;
+import com.github.marioatwired.jasmine.queue.QueuePersistenceService;
+import com.github.marioatwired.jasmine.settings.QueueType;
+import com.github.marioatwired.jasmine.settings.Settings;
+import com.github.marioatwired.jasmine.settings.SettingsManager;
 import com.typesafe.config.ConfigFactory;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.managers.AudioManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +48,21 @@ class PlayerManagerTest {
 
     @Mock
     private BotConfig config;
+
+    @Mock
+    private SettingsManager settingsManager;
+
+    @Mock
+    private Settings settings;
+
+    @Mock
+    private QueuePersistenceService queuePersistence;
+
+    @Mock
+    private Guild guild;
+
+    @Mock
+    private AudioManager audioManager;
 
     private PlayerManager playerManager;
 
@@ -130,6 +152,33 @@ class PlayerManagerTest {
         @DisplayName("getBot() returns the bot instance")
         void getBotReturnsBotInstance() {
             assertEquals(bot, playerManager.getBot());
+        }
+    }
+
+    @Nested
+    @DisplayName("Handler Restoration Tests")
+    class HandlerRestorationTests
+    {
+        @Test
+        @DisplayName("setUpHandler() restores the saved queue for a new handler")
+        void setUpHandlerRestoresSavedQueue()
+        {
+            when(bot.isNoGUI()).thenReturn(true);
+            when(bot.getSettingsManager()).thenReturn(settingsManager);
+            when(bot.getQueuePersistence()).thenReturn(queuePersistence);
+            when(settingsManager.getSettings(anyLong())).thenReturn(settings);
+            when(settingsManager.getSettings(any(Guild.class))).thenReturn(settings);
+            when(settings.getVolume()).thenReturn(100);
+            when(settings.getQueueType()).thenReturn(QueueType.FAIR);
+            when(guild.getIdLong()).thenReturn(123L);
+            when(guild.getAudioManager()).thenReturn(audioManager);
+            when(audioManager.getSendingHandler()).thenReturn(null);
+
+            AudioHandler handler = playerManager.setUpHandler(guild);
+
+            assertNotNull(handler);
+            verify(audioManager).setSendingHandler(handler);
+            verify(queuePersistence).restore(guild, handler);
         }
     }
 

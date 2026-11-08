@@ -1,8 +1,11 @@
 package com.github.marioatwired.jasmine.unit.service;
 
 import com.github.marioatwired.jasmine.TestBase;
+import com.github.marioatwired.jasmine.audio.QueuedTrack;
+import com.github.marioatwired.jasmine.queue.AbstractQueue;
 import com.github.marioatwired.jasmine.service.MusicService;
 import com.github.marioatwired.jasmine.service.OutputAdapter;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,5 +55,50 @@ public class PlayerServiceTest extends TestBase {
         musicService.play(guild, member, null, textChannel, output);
 
         verify(output).onShowHelp();
+    }
+
+    @Test
+    public void testPlayEmptyArgsResumesRestoredQueue() {
+        when(audioPlayer.getPlayingTrack()).thenReturn(null);
+
+        QueuedTrack next = mock(QueuedTrack.class);
+        AudioTrack track = mock(AudioTrack.class);
+        AudioTrackInfo info = new AudioTrackInfo("Title", "Author", 1000, "identifier", false, "uri");
+        when(track.getInfo()).thenReturn(info);
+        when(next.getTrack()).thenReturn(track);
+
+        @SuppressWarnings("unchecked")
+        AbstractQueue<QueuedTrack> queue = mock(AbstractQueue.class);
+        when(audioHandler.getQueue()).thenReturn(queue);
+        when(queue.pull()).thenReturn(next);
+
+        musicService.play(guild, member, null, textChannel, output);
+
+        verify(audioPlayer).playTrack(track);
+        verify(output).replySuccess(contains("Resumed"));
+    }
+
+    @Test
+    public void testPlayNowStartsSelectedTrackWhenPlayerIsIdle() {
+        when(audioPlayer.getPlayingTrack()).thenReturn(null);
+
+        QueuedTrack selected = mock(QueuedTrack.class);
+        AudioTrack track = mock(AudioTrack.class);
+        AudioTrackInfo info = new AudioTrackInfo("Title", "Author", 1000, "identifier", false, "uri");
+        when(track.getInfo()).thenReturn(info);
+        when(selected.getTrack()).thenReturn(track);
+
+        @SuppressWarnings("unchecked")
+        AbstractQueue<QueuedTrack> queue = mock(AbstractQueue.class);
+        when(audioHandler.getQueue()).thenReturn(queue);
+        when(queue.size()).thenReturn(1);
+        when(queue.get(0)).thenReturn(selected);
+        when(queue.pull()).thenReturn(selected);
+
+        musicService.playNow(guild, member, 1, output);
+
+        verify(audioPlayer).playTrack(track);
+        verify(audioPlayer, never()).stopTrack();
+        verify(output).replySuccess(contains("Now playing"));
     }
 }

@@ -59,7 +59,7 @@ public class QueueSlashCmd extends MusicSlashCommand
                         .setMinValue(1)
         );
         this.aliases = bot.getConfig().getAliases(this.name);
-        this.bePlaying = true;
+        this.bePlaying = false;
     }
 
     @Override

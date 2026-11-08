@@ -23,6 +23,7 @@ import com.github.marioatwired.jasmine.audio.PlayerManager;
 import com.github.marioatwired.jasmine.audio.TrackLoadingMonitor;
 import com.github.marioatwired.jasmine.entities.UserInteraction;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
+import com.github.marioatwired.jasmine.queue.QueuePersistenceService;
 import com.github.marioatwired.jasmine.service.MusicService;
 import com.github.marioatwired.jasmine.service.PlayerService;
 import com.github.marioatwired.jasmine.service.SearchService;
@@ -52,6 +53,7 @@ public class Bot
     private final BotConfig config;
     private final SettingsManager settings;
     private final PlayerManager players;
+    private final QueuePersistenceService queuePersistence;
     private final PlaylistLoader playlists;
     private final NowPlayingHandler nowplaying;
     private final AloneInVoiceHandler aloneInVoiceHandler;
@@ -79,6 +81,7 @@ public class Bot
         this.startTime = Instant.now();
         this.youTubeOauth2TokenHandler = new YoutubeOauth2TokenHandler();
         this.youTubeOauth2TokenHandler.init();
+        this.queuePersistence = new QueuePersistenceService(this);
         this.players = new PlayerManager(this);
         // Delay init of the PlayerManager until the GUI has started
         // this.players.init();
@@ -124,6 +127,11 @@ public class Bot
     public PlaylistLoader getPlaylistLoader()
     {
         return playlists;
+    }
+
+    public QueuePersistenceService getQueuePersistence()
+    {
+        return queuePersistence;
     }
     
     public NowPlayingHandler getNowplayingHandler()
@@ -216,6 +224,10 @@ public class Bot
         if (shuttingDown)
             return;
         shuttingDown = true;
+
+        // Persist queues before clearing handlers during audio cleanup.
+        queuePersistence.saveAll();
+        queuePersistence.stop();
 
         // Clean up audio connections first (before shutting down thread pool, as these may trigger events that use it)
         if (jda != null && jda.getStatus() != JDA.Status.SHUTTING_DOWN)

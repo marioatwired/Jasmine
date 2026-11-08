@@ -172,6 +172,20 @@ public class PlayerService implements TrackEnqueuer
                 }
                 return;
             }
+
+            if (handler.getPlayer().getPlayingTrack() == null && handler.getQueue() != null)
+            {
+                QueuedTrack next = handler.getQueue().pull();
+                if (next != null)
+                {
+                    handler.getPlayer().playTrack(next.getTrack());
+                    LOG.info("Resumed queue: guild={}, track=\"{}\"",
+                            guild.getId(), FormatUtil.getTrackTitle(next.getTrack()));
+                    output.replySuccess("Resumed **" + FormatUtil.getTrackTitle(next.getTrack()) + "**.");
+                    return;
+                }
+            }
+
             output.onShowHelp();
             return;
         }
@@ -575,8 +589,9 @@ public class PlayerService implements TrackEnqueuer
             queue.moveItem(position - 1, 0);
         }
 
-        // Skip the currently playing track to start the moved track immediately
-        handler.getPlayer().stopTrack();
+        // Start the selected track immediately, or skip the current one so it starts next.
+        if (!playNextIfIdle(handler))
+            handler.getPlayer().stopTrack();
 
         output.replySuccess("Now playing **" + trackTitle + "**");
     }
@@ -593,7 +608,8 @@ public class PlayerService implements TrackEnqueuer
 
         handler.getQueue().skip(position - 1);
         String trackTitle = FormatUtil.getTrackTitle(handler.getQueue().get(0).getTrack());
-        handler.getPlayer().stopTrack();
+        if (!playNextIfIdle(handler))
+            handler.getPlayer().stopTrack();
         output.replySuccess("Skipped to **" + trackTitle + "**");
     }
 
@@ -613,7 +629,8 @@ public class PlayerService implements TrackEnqueuer
 
         handler.getQueue().skip(position - 1);
         String trackTitle = FormatUtil.getTrackTitle(handler.getQueue().get(0).getTrack());
-        handler.getPlayer().stopTrack();
+        if (!playNextIfIdle(handler))
+            handler.getPlayer().stopTrack();
 
         LOG.info("Skipped to position: guild={}, position={}, track=\"{}\"",
                 guild.getId(), position, trackTitle);
@@ -624,6 +641,23 @@ public class PlayerService implements TrackEnqueuer
     private AudioHandler getHandler(Guild guild)
     {
         return (AudioHandler) guild.getAudioManager().getSendingHandler();
+    }
+
+    /**
+     * Starts the next queued track when the player is idle. Returns false when
+     * a track is already playing, in which case normal skip behavior applies.
+     */
+    private boolean playNextIfIdle(AudioHandler handler)
+    {
+        if (handler.getPlayer().getPlayingTrack() != null)
+            return false;
+
+        QueuedTrack next = handler.getQueue().pull();
+        if (next == null)
+            return false;
+
+        handler.getPlayer().playTrack(next.getTrack());
+        return true;
     }
 
     private Settings getSettings(Guild guild)
