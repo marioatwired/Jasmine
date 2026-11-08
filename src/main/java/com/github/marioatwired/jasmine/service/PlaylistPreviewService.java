@@ -16,10 +16,10 @@
 package com.github.marioatwired.jasmine.service;
 
 import com.github.marioatwired.jasmine.Bot;
-import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist;
-import com.github.marioatwired.jasmine.service.MusicService.PlaylistPreviewWithTracks;
-import com.github.marioatwired.jasmine.service.MusicService.PlaylistTracksPageInfo;
+import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
+import com.github.marioatwired.jasmine.service.dto.PlaylistPreviewWithTracks;
+import com.github.marioatwired.jasmine.service.dto.PlaylistTracksPageInfo;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;

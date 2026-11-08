@@ -20,6 +20,7 @@ import com.github.marioatwired.jasmine.audio.AudioHandler;
 import com.github.marioatwired.jasmine.audio.QueuedTrack;
 import com.github.marioatwired.jasmine.audio.RequestMetadata;
 import com.github.marioatwired.jasmine.queue.PlaybackHistory;
+import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.JDA;
@@ -49,7 +50,7 @@ public class HistoryService
         return (AudioHandler) guild.getAudioManager().getSendingHandler();
     }
 
-    public MusicService.HistoryInfo getHistoryInfo(Guild guild, JDA jda)
+    public HistoryInfo getHistoryInfo(Guild guild, JDA jda)
     {
         AudioHandler handler = getHandler(guild);
         if (handler == null)
@@ -69,11 +70,11 @@ public class HistoryService
             trackStrings[i] = list.get(i).toString();
         }
 
-        return new MusicService.HistoryInfo(trackStrings, totalDuration, maxSize, disabled);
+        return new HistoryInfo(trackStrings, totalDuration, maxSize, disabled);
     }
 
     public void queueFromHistory(Guild guild, Member member, int historyPosition,
-                                 TextChannel channel, MusicService.OutputAdapter output)
+                                 TextChannel channel, OutputAdapter output)
     {
         AudioHandler handler = getHandler(guild);
         if (handler == null)
@@ -120,7 +121,7 @@ public class HistoryService
     }
 
     public void queueAllFromHistory(Guild guild, Member member, TextChannel channel,
-                                    MusicService.OutputAdapter output)
+                                    OutputAdapter output)
     {
         AudioHandler handler = getHandler(guild);
         if (handler == null)
@@ -183,7 +184,7 @@ public class HistoryService
     }
 
     public void playFromHistoryNow(Guild guild, Member member, int historyPosition,
-                                   TextChannel channel, MusicService.OutputAdapter output)
+                                   TextChannel channel, OutputAdapter output)
     {
         AudioHandler handler = getHandler(guild);
         if (handler == null)
@@ -233,7 +234,7 @@ public class HistoryService
         output.replySuccess("Now playing **" + FormatUtil.filter(title) + "**");
     }
 
-    private boolean requireHistoryEnabled(PlaybackHistory<QueuedTrack> history, MusicService.OutputAdapter output)
+    private boolean requireHistoryEnabled(PlaybackHistory<QueuedTrack> history, OutputAdapter output)
     {
         if (history.getMaxSize() == 0)
         {

@@ -15,9 +15,10 @@
  */
 package com.github.marioatwired.jasmine.commands.v2;
 
-import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.github.marioatwired.jasmine.audio.AudioHandler;
 import com.github.marioatwired.jasmine.commands.BaseOutputAdapter;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.InteractionHook;

@@ -15,9 +15,10 @@
  */
 package com.github.marioatwired.jasmine.commands.v1;
 
+import com.github.marioatwired.jasmine.commands.BaseOutputAdapter;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
 import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
-import com.github.marioatwired.jasmine.commands.BaseOutputAdapter;
 import net.dv8tion.jda.api.entities.Message;
 
 import java.util.function.Consumer;

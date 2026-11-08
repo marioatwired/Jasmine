@@ -15,11 +15,12 @@
  */
 package com.github.marioatwired.jasmine.commands.v1.music;
 
-import com.jagrosh.jdautilities.command.CommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.MusicCommand;
 import com.github.marioatwired.jasmine.commands.v2.music.HistorySlashCmd;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
+import com.jagrosh.jdautilities.command.CommandEvent;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
@@ -60,7 +61,7 @@ public class HistoryCmd extends MusicCommand
             }
         }
 
-        MusicService.HistoryInfo historyInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
+        HistoryInfo historyInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
         if (historyInfo == null)
         {
             event.reply(event.getClient().getWarning() + " Playback history is empty!");

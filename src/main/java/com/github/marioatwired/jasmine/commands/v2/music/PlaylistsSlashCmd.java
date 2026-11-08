@@ -15,13 +15,15 @@
  */
 package com.github.marioatwired.jasmine.commands.v2.music;
 
-import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v2.MusicSlashCommand;
 import com.github.marioatwired.jasmine.listener.interaction.PaginatedListComponents;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDetailsInfo;
+import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
 import com.github.marioatwired.jasmine.utils.PaginatedListEmbedUtil;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
@@ -56,7 +58,7 @@ public class PlaylistsSlashCmd extends MusicSlashCommand
     @Override
     public void doCommand(SlashCommandEvent event)
     {
-        MusicService.PlaylistNamesInfo playlistNamesInfo = bot.getMusicService().getAvailablePlaylistNames();
+        PlaylistNamesInfo playlistNamesInfo = bot.getMusicService().getAvailablePlaylistNames();
         if (playlistNamesInfo.hasError())
         {
             event.reply(event.getClient().getError() + " " + playlistNamesInfo.errorMessage)
@@ -109,7 +111,7 @@ public class PlaylistsSlashCmd extends MusicSlashCommand
      * Builds the playlist details embed with preview lines in the same style as Queue/History.
      * Preview items are shown as markdown links to avoid Discord URL unfurling and misalignment.
      */
-    public static MessageEmbed buildPlaylistDetailsEmbed(MusicService.PlaylistDetailsInfo details, Color memberColor)
+    public static MessageEmbed buildPlaylistDetailsEmbed(PlaylistDetailsInfo details, Color memberColor)
     {
         int previewSize = details.previewItems.size();
         List<String> lineContents = new ArrayList<>(previewSize);

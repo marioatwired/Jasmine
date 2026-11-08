@@ -17,6 +17,8 @@ package com.github.marioatwired.jasmine.unit.commands.v2.music;
 
 import com.github.marioatwired.jasmine.commands.v2.music.QueueSlashCmd;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.NowPlayingInfo;
+import com.github.marioatwired.jasmine.service.dto.QueueInfo;
 import com.github.marioatwired.jasmine.settings.QueueType;
 import com.github.marioatwired.jasmine.settings.RepeatMode;
 import com.github.marioatwired.jasmine.testutil.commands.SlashCommandTestFixture;
@@ -73,7 +75,7 @@ public class QueueSlashCmdTest
         when(fixture.getMusicService().getQueueInfo(fixture.getGuild(), fixture.getJda())).thenReturn(null);
 
         when(noMusicMsg.getEmbeds()).thenReturn(Collections.singletonList(embed));
-        MusicService.NowPlayingInfo npInfo = new MusicService.NowPlayingInfo(null, noMusicMsg, false);
+        NowPlayingInfo npInfo = new NowPlayingInfo(null, noMusicMsg, false);
         when(fixture.getMusicService().getNowPlayingInfo(fixture.getGuild(), fixture.getJda())).thenReturn(npInfo);
         when(fixture.getEvent().reply(any(MessageCreateData.class))).thenReturn(fixture.getReplyAction());
 
@@ -92,7 +94,7 @@ public class QueueSlashCmdTest
         when(fixture.getMusicService().getQueueInfo(fixture.getGuild(), fixture.getJda())).thenReturn(null);
 
         when(nowPlayingMsg.getEmbeds()).thenReturn(Collections.singletonList(embed));
-        MusicService.NowPlayingInfo npInfo = new MusicService.NowPlayingInfo(nowPlayingMsg, null, true);
+        NowPlayingInfo npInfo = new NowPlayingInfo(nowPlayingMsg, null, true);
         when(fixture.getMusicService().getNowPlayingInfo(fixture.getGuild(), fixture.getJda())).thenReturn(npInfo);
         when(fixture.getEvent().reply(any(MessageCreateData.class))).thenReturn(fixture.getReplyAction());
 
@@ -126,7 +128,7 @@ public class QueueSlashCmdTest
     {
         // Given
         when(fixture.getEvent().getOption("page")).thenReturn(null);
-        MusicService.QueueInfo queueInfo = new MusicService.QueueInfo(
+        QueueInfo queueInfo = new QueueInfo(
                 new String[]{"Track 1", "Track 2", "Track 3"},
                 300000L,
                 "Now Playing",
@@ -166,7 +168,7 @@ public class QueueSlashCmdTest
         when(fixture.getEvent().getOption("page")).thenReturn(pageOption);
         when(pageOption.getAsLong()).thenReturn((long) page);
 
-        MusicService.QueueInfo queueInfo = new MusicService.QueueInfo(
+        QueueInfo queueInfo = new QueueInfo(
                 new String[]{"Track 1", "Track 2", "Track 3", "Track 4", "Track 5",
                         "Track 6", "Track 7", "Track 8", "Track 9", "Track 10",
                         "Track 11", "Track 12"},
@@ -199,7 +201,7 @@ public class QueueSlashCmdTest
         when(fixture.getEvent().getOption("page")).thenReturn(pageOption);
         when(pageOption.getAsLong()).thenReturn((long) page);
 
-        MusicService.QueueInfo queueInfo = new MusicService.QueueInfo(
+        QueueInfo queueInfo = new QueueInfo(
                 new String[]{"Track 1", "Track 2", "Track 3"},
                 300000L,
                 "Now Playing",
@@ -233,7 +235,7 @@ public class QueueSlashCmdTest
         {
             tracks[i] = "Track " + (i + 1);
         }
-        MusicService.QueueInfo queueInfo = new MusicService.QueueInfo(
+        QueueInfo queueInfo = new QueueInfo(
                 tracks,
                 1500000L,
                 "Now Playing",

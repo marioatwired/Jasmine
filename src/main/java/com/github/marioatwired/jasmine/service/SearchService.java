@@ -16,11 +16,12 @@
 package com.github.marioatwired.jasmine.service;
 
 import com.github.marioatwired.jasmine.Bot;
+import com.github.marioatwired.jasmine.service.dto.TrackAddResult;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
 import com.github.marioatwired.jasmine.utils.TimeUtil;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
-import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.entities.Guild;
@@ -156,7 +157,7 @@ public class SearchService
             MusicService musicService = bot.getMusicService();
 
             // Use shared track operations from MusicService
-            MusicService.TrackAddResult result = musicService.addTrackToQueue(guild, member, track, query, channel);
+            TrackAddResult result = musicService.addTrackToQueue(guild, member, track, query, channel);
             if (result == null)
             {
                 LOG.warn("Search track rejected (too long): guild={}, track=\"{}\"",

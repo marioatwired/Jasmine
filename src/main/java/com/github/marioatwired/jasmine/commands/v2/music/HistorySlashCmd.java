@@ -15,13 +15,14 @@
  */
 package com.github.marioatwired.jasmine.commands.v2.music;
 
-import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v2.MusicSlashCommand;
 import com.github.marioatwired.jasmine.listener.interaction.PaginatedListComponents;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
 import com.github.marioatwired.jasmine.utils.PaginatedListEmbedUtil;
 import com.github.marioatwired.jasmine.utils.TimeUtil;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
@@ -63,7 +64,7 @@ public class HistorySlashCmd extends MusicSlashCommand
     {
         int page = event.getOption("page") != null ? (int) event.getOption("page").getAsLong() : 1;
 
-        MusicService.HistoryInfo historyInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
+        HistoryInfo historyInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
         if (historyInfo == null)
         {
             event.reply(event.getClient().getWarning() + " Playback history is empty!").setEphemeral(true).queue();
@@ -98,7 +99,7 @@ public class HistorySlashCmd extends MusicSlashCommand
     /**
      * Builds the history embed with paginated track list.
      */
-    public static MessageEmbed buildHistoryEmbed(MusicService.HistoryInfo historyInfo, int page, int totalPages,
+    public static MessageEmbed buildHistoryEmbed(HistoryInfo historyInfo, int page, int totalPages,
                                                  int selectedTrack, Color memberColor)
     {
         int startIndex = (page - 1) * TRACKS_PER_PAGE;

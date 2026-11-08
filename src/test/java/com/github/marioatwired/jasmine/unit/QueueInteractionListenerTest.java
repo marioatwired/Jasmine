@@ -17,6 +17,7 @@ package com.github.marioatwired.jasmine.unit;
 
 import com.github.marioatwired.jasmine.listener.QueueInteractionListener;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.QueueInfo;
 import com.github.marioatwired.jasmine.settings.QueueType;
 import com.github.marioatwired.jasmine.settings.RepeatMode;
 import com.github.marioatwired.jasmine.testutil.listener.ListenerTestFixture;
@@ -47,7 +48,7 @@ class QueueInteractionListenerTest
     {
         fixture.withButtonId("queue_select11_1_0_" + fixture.getUser().getIdLong())
                 .withMemberInVoiceChannel();
-        MusicService.QueueInfo info = new MusicService.QueueInfo(
+        QueueInfo info = new QueueInfo(
                 new String[]{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"},
                 0L,
                 null,

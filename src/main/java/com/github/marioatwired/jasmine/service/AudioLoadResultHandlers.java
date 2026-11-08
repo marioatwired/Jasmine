@@ -19,10 +19,11 @@ import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.audio.AudioHandler;
 import com.github.marioatwired.jasmine.audio.QueuedTrack;
 import com.github.marioatwired.jasmine.audio.RequestMetadata;
+import com.github.marioatwired.jasmine.service.dto.TrackAddResult;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
-import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.Permission;
@@ -59,14 +60,14 @@ public final class AudioLoadResultHandlers
     {
         protected final MusicService musicService;
         protected final Bot bot;
-        protected final MusicService.OutputAdapter output;
+        protected final OutputAdapter output;
         protected final Guild guild;
         protected final Member member;
         protected final String args;
         protected final boolean ytsearch;
         protected final TextChannel channel;
 
-        protected BaseResultHandler(MusicService musicService, Bot bot, MusicService.OutputAdapter output,
+        protected BaseResultHandler(MusicService musicService, Bot bot, OutputAdapter output,
                                      Guild guild, Member member, String args, boolean ytsearch, TextChannel channel)
         {
             this.musicService = musicService;
@@ -132,7 +133,7 @@ public final class AudioLoadResultHandlers
         private static final String LOAD = "\uD83D\uDCE5"; // 📥
         private static final String CANCEL = "\uD83D\uDEAB"; // 🚫
 
-        public PlayResultHandler(MusicService musicService, Bot bot, MusicService.OutputAdapter output,
+        public PlayResultHandler(MusicService musicService, Bot bot, OutputAdapter output,
                                   Guild guild, Member member, String args, boolean ytsearch, TextChannel channel)
         {
             super(musicService, bot, output, guild, member, args, ytsearch, channel);
@@ -152,7 +153,7 @@ public final class AudioLoadResultHandlers
 
         private void loadSingle(AudioTrack track, AudioPlaylist playlist)
         {
-            MusicService.TrackAddResult result = musicService.addTrackToQueue(guild, member, track, args, channel);
+            TrackAddResult result = musicService.addTrackToQueue(guild, member, track, args, channel);
             if (result == null)
             {
                 output.editMessage(FormatUtil.filter(bot.getConfig().getWarning() + " " + musicService.formatTooLongError(track)));
@@ -289,7 +290,7 @@ public final class AudioLoadResultHandlers
      */
     public static class PlayNextResultHandler extends BaseResultHandler
     {
-        public PlayNextResultHandler(MusicService musicService, Bot bot, MusicService.OutputAdapter output,
+        public PlayNextResultHandler(MusicService musicService, Bot bot, OutputAdapter output,
                                       Guild guild, Member member, String args, boolean ytsearch, TextChannel channel)
         {
             super(musicService, bot, output, guild, member, args, ytsearch, channel);
@@ -311,7 +312,7 @@ public final class AudioLoadResultHandlers
         {
             LOG.debug("PlayNext loading track: guild={}, track=\"{}\"", guild.getId(), track.getInfo().title);
 
-            MusicService.TrackAddResult result = musicService.addTrackToFront(guild, member, track, args, channel);
+            TrackAddResult result = musicService.addTrackToFront(guild, member, track, args, channel);
             if (result == null)
             {
                 output.editMessage(FormatUtil.filter(bot.getConfig().getWarning() + " " + musicService.formatTooLongError(track)));

@@ -17,6 +17,7 @@ package com.github.marioatwired.jasmine.listener.interaction;
 
 import com.github.marioatwired.jasmine.audio.AudioHandler;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
@@ -24,7 +25,7 @@ import net.dv8tion.jda.api.utils.messages.MessageEditData;
 import java.util.function.Consumer;
 
 /**
- * Factory methods for MusicService.OutputAdapter used by interaction listeners.
+ * Factory methods for OutputAdapter used by interaction listeners.
  */
 public final class OutputAdapters {
 
@@ -34,8 +35,8 @@ public final class OutputAdapters {
     /**
      * Adapter for playback control buttons: replies and edits now-playing message.
      */
-    public static MusicService.OutputAdapter forPlaybackButton(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
-        return new MusicService.OutputAdapter() {
+    public static OutputAdapter forPlaybackButton(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
+        return new OutputAdapter() {
             @Override
             public void replySuccess(String content) {
                 event.reply(content).setEphemeral(true).queue();
@@ -81,8 +82,8 @@ public final class OutputAdapters {
      * Adapter for favorite playback button:
      * success replies are public, warnings/errors remain ephemeral.
      */
-    public static MusicService.OutputAdapter forFavoritePlaybackButton(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
-        return new MusicService.OutputAdapter() {
+    public static OutputAdapter forFavoritePlaybackButton(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
+        return new OutputAdapter() {
             private void sendResponse(String content, boolean ephemeral) {
                 if (!event.isAcknowledged()) {
                     var reply = event.reply(content);
@@ -144,8 +145,8 @@ public final class OutputAdapters {
     /**
      * Adapter for queue embed actions: only errors/warnings are replied; success updates the embed instead.
      */
-    public static MusicService.OutputAdapter forQueueEmbed(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
-        return new MusicService.OutputAdapter() {
+    public static OutputAdapter forQueueEmbed(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
+        return new OutputAdapter() {
             @Override
             public void replySuccess(String content) {
             }
@@ -185,8 +186,8 @@ public final class OutputAdapters {
     /**
      * Adapter for history embed actions: all feedback via ephemeral reply.
      */
-    public static MusicService.OutputAdapter forHistoryReply(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
-        return new MusicService.OutputAdapter() {
+    public static OutputAdapter forHistoryReply(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
+        return new OutputAdapter() {
             @Override
             public void replySuccess(String content) {
                 event.reply(content).setEphemeral(true).queue();
@@ -227,8 +228,8 @@ public final class OutputAdapters {
     /**
      * Adapter for playlists embed actions: all feedback via ephemeral reply.
      */
-    public static MusicService.OutputAdapter forPlaylistsReply(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
-        return new MusicService.OutputAdapter() {
+    public static OutputAdapter forPlaylistsReply(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
+        return new OutputAdapter() {
             @Override
             public void replySuccess(String content) {
                 event.reply(content).setEphemeral(true).queue();
@@ -269,8 +270,8 @@ public final class OutputAdapters {
     /**
      * Adapter for queue move select: only errors/warnings replied.
      */
-    public static MusicService.OutputAdapter forQueueMoveSelect(net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent event) {
-        return new MusicService.OutputAdapter() {
+    public static OutputAdapter forQueueMoveSelect(net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent event) {
+        return new OutputAdapter() {
             @Override
             public void replySuccess(String content) {
             }
@@ -310,8 +311,8 @@ public final class OutputAdapters {
     /**
      * Adapter for history save modal: all feedback via ephemeral reply.
      */
-    public static MusicService.OutputAdapter forHistoryModal(net.dv8tion.jda.api.events.interaction.ModalInteractionEvent event) {
-        return new MusicService.OutputAdapter() {
+    public static OutputAdapter forHistoryModal(net.dv8tion.jda.api.events.interaction.ModalInteractionEvent event) {
+        return new OutputAdapter() {
             @Override
             public void replySuccess(String content) {
                 event.reply(content).setEphemeral(true).queue();

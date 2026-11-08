@@ -21,6 +21,8 @@ import com.github.marioatwired.jasmine.listener.interaction.ComponentIdParsers;
 import com.github.marioatwired.jasmine.listener.interaction.InteractionGuards;
 import com.github.marioatwired.jasmine.listener.interaction.OutputAdapters;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
+import com.github.marioatwired.jasmine.service.dto.HistoryInfo;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.label.Label;
 import net.dv8tion.jda.api.components.textinput.TextInput;
@@ -86,7 +88,7 @@ public class HistoryInteractionListener extends ListenerAdapter {
         String action = id.action();
 
         MusicService musicService = bot.getMusicService();
-        MusicService.HistoryInfo historyInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
+        HistoryInfo historyInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
 
         if (historyInfo == null) {
             event.editMessage("Playback history is now empty!").setEmbeds().setComponents().queue();
@@ -141,10 +143,10 @@ public class HistoryInteractionListener extends ListenerAdapter {
             if (!InteractionGuards.ensureBotInUserVoiceChannel(event, bot)) {
                 return;
             }
-            MusicService.OutputAdapter adapter = OutputAdapters.forHistoryReply(event);
+            OutputAdapter adapter = OutputAdapters.forHistoryReply(event);
             TextChannel channel = event.getChannel().asTextChannel();
             musicService.queueFromHistory(event.getGuild(), event.getMember(), selectedTrack, channel, adapter);
-            MusicService.HistoryInfo newInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
+            HistoryInfo newInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
             if (newInfo == null) {
                 event.editMessage("Playback history is now empty!").setEmbeds().setComponents().queue();
             } else if (newInfo.isDisabled()) {
@@ -164,10 +166,10 @@ public class HistoryInteractionListener extends ListenerAdapter {
             if (!InteractionGuards.ensureBotInUserVoiceChannel(event, bot)) {
                 return;
             }
-            MusicService.OutputAdapter adapter = OutputAdapters.forHistoryReply(event);
+            OutputAdapter adapter = OutputAdapters.forHistoryReply(event);
             TextChannel channel = event.getChannel().asTextChannel();
             musicService.playFromHistoryNow(event.getGuild(), event.getMember(), selectedTrack, channel, adapter);
-            MusicService.HistoryInfo newInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
+            HistoryInfo newInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
             if (newInfo == null) {
                 event.editMessage("Playback history is now empty!").setEmbeds().setComponents().queue();
             } else if (newInfo.isDisabled()) {
@@ -182,10 +184,10 @@ public class HistoryInteractionListener extends ListenerAdapter {
             if (!InteractionGuards.ensureBotInUserVoiceChannel(event, bot)) {
                 return;
             }
-            MusicService.OutputAdapter adapter = OutputAdapters.forHistoryReply(event);
+            OutputAdapter adapter = OutputAdapters.forHistoryReply(event);
             TextChannel channel = event.getChannel().asTextChannel();
             musicService.queueAllFromHistory(event.getGuild(), event.getMember(), channel, adapter);
-            MusicService.HistoryInfo newInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
+            HistoryInfo newInfo = musicService.getHistoryInfo(event.getGuild(), event.getJDA());
             if (newInfo == null) {
                 event.editMessage("Playback history is now empty!").setEmbeds().setComponents().queue();
             } else if (newInfo.isDisabled()) {
@@ -240,12 +242,12 @@ public class HistoryInteractionListener extends ListenerAdapter {
             return;
         }
 
-        MusicService.OutputAdapter adapter = OutputAdapters.forHistoryModal(event);
+        OutputAdapter adapter = OutputAdapters.forHistoryModal(event);
 
         bot.getMusicService().saveHistoryAsPlaylist(event.getGuild(), event.getMember(), playlistName, adapter);
     }
 
-    private void updateHistoryEmbed(ButtonInteractionEvent event, MusicService.HistoryInfo historyInfo,
+    private void updateHistoryEmbed(ButtonInteractionEvent event, HistoryInfo historyInfo,
                                     int page, int totalPages, int selectedTrack, long userId) {
         int tracksOnPage = HistorySlashCmd.getTracksOnPage(page, historyInfo.tracks.length);
         MessageEmbed embed = HistorySlashCmd.buildHistoryEmbed(historyInfo, page, totalPages, selectedTrack,

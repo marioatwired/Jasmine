@@ -17,6 +17,7 @@ package com.github.marioatwired.jasmine.unit.commands.v2.music;
 
 import com.github.marioatwired.jasmine.commands.v2.music.PlaylistsSlashCmd;
 import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
 import com.github.marioatwired.jasmine.testutil.commands.SlashCommandTestFixture;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
@@ -52,7 +53,7 @@ class PlaylistsSlashCmdTest
     void doCommand_storageUnavailable_repliesEphemeralWarning()
     {
         when(musicService.getAvailablePlaylistNames())
-                .thenReturn(MusicService.PlaylistNamesInfo.error("Playlists storage is unavailable."));
+                .thenReturn(PlaylistNamesInfo.error("Playlists storage is unavailable."));
 
         command.doCommand(fixture.getEvent());
 
@@ -64,7 +65,7 @@ class PlaylistsSlashCmdTest
     void doCommand_emptyPlaylists_repliesEphemeralWarning()
     {
         when(musicService.getAvailablePlaylistNames())
-                .thenReturn(MusicService.PlaylistNamesInfo.success(List.of()));
+                .thenReturn(PlaylistNamesInfo.success(List.of()));
 
         command.doCommand(fixture.getEvent());
 
@@ -76,7 +77,7 @@ class PlaylistsSlashCmdTest
     void doCommand_hasPlaylists_repliesEmbedAndComponents()
     {
         when(musicService.getAvailablePlaylistNames())
-                .thenReturn(MusicService.PlaylistNamesInfo.success(List.of("favorite", "night_drive")));
+                .thenReturn(PlaylistNamesInfo.success(List.of("favorite", "night_drive")));
 
         command.doCommand(fixture.getEvent());
 

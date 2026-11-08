@@ -4,6 +4,8 @@ import com.github.marioatwired.jasmine.TestBase;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
 import com.github.marioatwired.jasmine.service.MusicService;
 import com.github.marioatwired.jasmine.service.PlaylistDraftService;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDraftContext;
+import com.github.marioatwired.jasmine.service.dto.PlaylistDraftMutationResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +25,7 @@ class PlaylistDraftServiceTest extends TestBase
 {
     private PlaylistLoader playlistLoader;
     private PlaylistDraftService draftService;
-    private MusicService.PlaylistDraftContext context;
+    private PlaylistDraftContext context;
 
     @BeforeEach
     @Override
@@ -47,7 +49,7 @@ class PlaylistDraftServiceTest extends TestBase
     @Test
     void removeDraftItemCreatesDraftAndMarksItDirty()
     {
-        MusicService.PlaylistDraftMutationResult result = draftService.removePlaylistDraftItem(context, 2);
+        PlaylistDraftMutationResult result = draftService.removePlaylistDraftItem(context, 2);
 
         assertTrue(result.success);
         assertEquals(2, result.totalItems);
@@ -60,12 +62,12 @@ class PlaylistDraftServiceTest extends TestBase
     @Test
     void moveDraftItemPersistsNewOrderWhenSaved()
     {
-        MusicService.PlaylistDraftMutationResult moveResult = draftService.movePlaylistDraftItem(context, 1, 3);
+        PlaylistDraftMutationResult moveResult = draftService.movePlaylistDraftItem(context, 1, 3);
 
         assertTrue(moveResult.success);
         assertTrue(moveResult.dirty);
 
-        MusicService.PlaylistDraftMutationResult saveResult = draftService.savePlaylistDraft(context);
+        PlaylistDraftMutationResult saveResult = draftService.savePlaylistDraft(context);
 
         assertTrue(saveResult.success);
         assertFalse(saveResult.dirty);
@@ -88,7 +90,7 @@ class PlaylistDraftServiceTest extends TestBase
     @Test
     void saveWithoutChangesReturnsError()
     {
-        MusicService.PlaylistDraftMutationResult result = draftService.savePlaylistDraft(context);
+        PlaylistDraftMutationResult result = draftService.savePlaylistDraft(context);
 
         assertFalse(result.success);
         assertEquals("There are no unsaved changes.", result.errorMessage);
@@ -102,9 +104,9 @@ class PlaylistDraftServiceTest extends TestBase
         when(playlistLoader.getPlaylistResult("missing"))
                 .thenReturn(PlaylistLoader.PlaylistResult.failure(error));
 
-        MusicService.PlaylistDraftContext missingContext =
+        PlaylistDraftContext missingContext =
                 draftService.buildPlaylistDraftContext(GUILD_ID, 1L, 2L, OWNER_ID, "missing");
-        MusicService.PlaylistDraftMutationResult result = draftService.removePlaylistDraftItem(missingContext, 1);
+        PlaylistDraftMutationResult result = draftService.removePlaylistDraftItem(missingContext, 1);
 
         assertFalse(result.success);
         assertEquals("Playlist no longer exists.", result.errorMessage);
@@ -114,7 +116,7 @@ class PlaylistDraftServiceTest extends TestBase
     @Test
     void invalidPositionReturnsError()
     {
-        MusicService.PlaylistDraftMutationResult result = draftService.removePlaylistDraftItem(context, 4);
+        PlaylistDraftMutationResult result = draftService.removePlaylistDraftItem(context, 4);
 
         assertFalse(result.success);
         assertEquals("Position must be between 1 and 3.", result.errorMessage);

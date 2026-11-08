@@ -15,13 +15,14 @@
  */
 package com.github.marioatwired.jasmine.commands.v2.music;
 
-import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v2.MusicSlashCommand;
 import com.github.marioatwired.jasmine.service.MusicService;
 import com.github.marioatwired.jasmine.service.SearchService;
+import com.github.marioatwired.jasmine.service.dto.TrackAddResult;
 import com.github.marioatwired.jasmine.utils.FormatUtil;
 import com.github.marioatwired.jasmine.utils.TimeUtil;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -148,7 +149,7 @@ public class SearchSlashCmd extends MusicSlashCommand
 
                                                     if (selectedTrack != null)
                                                     {
-                                                        MusicService.TrackAddResult result = musicService.addTrackToQueue(
+                                                        TrackAddResult result = musicService.addTrackToQueue(
                                                                 event.getGuild(),
                                                                 event.getMember(),
                                                                 selectedTrack,
