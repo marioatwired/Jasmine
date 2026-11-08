@@ -314,4 +314,17 @@ class PlaylistLoaderTest
         List<String> lines = Files.readAllLines(tempDir.resolve("favorites.txt"));
         assertEquals(1, lines.stream().filter(l -> l.trim().equals("https://example.com/race")).count());
     }
+
+    @Test
+    @DisplayName("getPlaylistResult() trims items and ignores comments")
+    void getPlaylistResult_trimsItemsAndIgnoresComments() throws IOException
+    {
+        Files.writeString(tempDir.resolve("commented.txt"),
+                "# comment\n\n  https://example.com/a  \n// another comment\nlocal-file\n");
+
+        PlaylistLoader.Playlist playlist = loader.getPlaylist("commented");
+
+        assertNotNull(playlist);
+        assertEquals(List.of("https://example.com/a", "local-file"), playlist.getItems());
+    }
 }

@@ -50,7 +50,7 @@ that need to add tracks without depending on the whole `MusicService` facade.
 | `entities` | `Prompt`, `UserInteraction`, and small shared types. |
 | `gui` | Main window, console, settings, status, performance, timeline, and source-health panels. |
 | `listener` | JDA listeners for voice state, now-playing cleanup, playback buttons, queue/history/playlist/settings interactions, and startup lifecycle. |
-| `playlist` | Playlist parsing and storage. |
+| `playlist` | Playlist model, parsing, and file-system storage. |
 | `queue` | `AbstractQueue`, `LinearQueue`, `FairQueue`, `PlaybackHistory`. |
 | `service` | `MusicService` facade; `PlayerService`, `QueueService`, `PlaylistService`, `FavoritesService`, `HistoryPlaylistService`, `PlaylistDraftService`, `PlaylistPreviewService`, `HistoryService`, `NowPlayingService`; `SearchService`; `OutputAdapter`, `TrackEnqueuer`; audio load result handlers. |
 | `service.dto` | DTOs shared by the facade, services, commands, listeners, and GUI. |
@@ -203,6 +203,7 @@ history, playlist, volume, repeat, shuffle, skip, stop, and pause behavior.
 `PlaylistPreviewServiceTest` cover the focused services directly.
 `AudioLoadResultHandlersTest` covers load results and fallback paths.
 `SearchCmdTest` and `ForceRemoveCmdTest` cover the select-menu interaction flows.
+`PlaylistParserTest` covers playlist parsing and shuffle directives.
 Config tests cover legacy migration, rendering, diagnostics, validation, and
 file updates. Listener tests use Mockito and the fixtures under `testutil`.
 The `coverage` profile enforces a global line-coverage floor and a higher floor
@@ -212,8 +213,8 @@ for the `service` package.
 
 - `PlayerService` is still a large coordinator for playback and track loading;
   further extraction is possible once its use cases stabilize.
-- `PlaylistLoader` and `PlaylistsInteractionListener` are large and mix storage,
-  parsing, and UI state.
+- `PlaylistsInteractionListener` still owns playlist list/detail button routing;
+  it can be split further once the interaction flows stabilize.
 - The v1 and v2 command layers duplicate some presentation logic.
 - Performance monitoring singletons are convenient but harder to test than
   injected instances.
