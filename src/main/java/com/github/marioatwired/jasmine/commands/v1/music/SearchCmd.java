@@ -161,6 +161,13 @@ public class SearchCmd extends MusicCommand
                                     return;
                                 }
 
+                                if (selected < 0 || selected >= tracks.size())
+                                {
+                                    e.editMessage(event.getClient().getError() + " Invalid selection.")
+                                            .setEmbeds().setComponents().queue();
+                                    return;
+                                }
+
                                 AudioTrack track = tracks.get(selected);
                                 String trackTitle = FormatUtil.getTrackTitle(track);
                                 if (bot.getConfig().isTooLong(track))
