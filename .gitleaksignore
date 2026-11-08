@@ -1,0 +1,4 @@
+# Historical test fixture values in a removed upstream test.
+# These are Discord snowflake IDs used as dummy owner IDs, not credentials.
+3047e9cb079b6600505e5b96b61d7539fba2bfe6:src/test/java/com/jagrosh/jmusicbot/unit/BotConfigUnitTest.java:discord-client-id:166
+af5065882c1fd91dff05262adffd54b37059ebd2:src/test/java/com/jagrosh/jmusicbot/unit/BotConfigUnitTest.java:discord-client-id:159
