@@ -114,9 +114,6 @@ public class AudioTestFixture
     /** @deprecated Use {@link TestConstants#OWNER_ID} instead */
     @Deprecated
     public static final long OWNER_ID = TestConstants.OWNER_ID;
-    /** @deprecated Use {@link TestConstants#MESSAGE_ID} instead */
-    @Deprecated
-    public static final long MESSAGE_ID = TestConstants.MESSAGE_ID;
     /** @deprecated Use {@link TestConstants#CHANNEL_ID} instead */
     @Deprecated
     public static final long CHANNEL_ID = TestConstants.CHANNEL_ID;
@@ -266,7 +263,7 @@ public class AudioTestFixture
         doNothing().when(deleteAction).queue();
 
         // Message defaults
-        when(message.getIdLong()).thenReturn(MESSAGE_ID);
+        when(message.getIdLong()).thenReturn(TestConstants.MESSAGE_ID);
         when(message.getChannel()).thenReturn((MessageChannelUnion) textChannel);
         when(message.getGuild()).thenReturn(guild);
     }

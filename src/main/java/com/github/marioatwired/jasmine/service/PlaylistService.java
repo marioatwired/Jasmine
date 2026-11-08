@@ -22,7 +22,6 @@ import com.github.marioatwired.jasmine.audio.RequestMetadata;
 import com.github.marioatwired.jasmine.commands.v1.DJCommand;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
-import com.github.marioatwired.jasmine.queue.PlaybackHistory;
 import com.github.marioatwired.jasmine.service.dto.PlaylistDetailsInfo;
 import com.github.marioatwired.jasmine.service.dto.PlaylistDraftContext;
 import com.github.marioatwired.jasmine.service.dto.PlaylistDraftMutationResult;
@@ -40,27 +39,21 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 
 /**
- * Saved playlist management, favorites, and playlist operation orchestration.
+ * Saved playlist management and playlist operation orchestration.
  */
 public class PlaylistService
 {
-    private static final String FAVORITES_PLAYLIST_NAME = "favorites";
-    private static final Pattern WINDOWS_DRIVE_ABSOLUTE_PATH = Pattern.compile("^[A-Za-z]:[\\\\/].*");
-    private static final boolean WINDOWS_RUNTIME =
-            System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
-
     private final Bot bot;
     private final TrackEnqueuer trackEnqueuer;
     private final PlaylistDraftService playlistDraftService;
     private final PlaylistPreviewService playlistPreviewService;
+    private final FavoritesService favoritesService;
+    private final HistoryPlaylistService historyPlaylistService;
 
     public PlaylistService(Bot bot, TrackEnqueuer trackEnqueuer)
     {
@@ -68,21 +61,13 @@ public class PlaylistService
         this.trackEnqueuer = trackEnqueuer;
         this.playlistDraftService = new PlaylistDraftService(bot);
         this.playlistPreviewService = new PlaylistPreviewService(bot);
+        this.favoritesService = new FavoritesService(bot);
+        this.historyPlaylistService = new HistoryPlaylistService(bot);
     }
 
     private AudioHandler getHandler(Guild guild)
     {
         return (AudioHandler) guild.getAudioManager().getSendingHandler();
-    }
-
-    private boolean requireDJPermission(Guild guild, Member member, OutputAdapter output, String action)
-    {
-        if (!DJCommand.checkDJPermission(bot, guild, member))
-        {
-            output.replyError("You need to be a DJ to " + action + "!");
-            return false;
-        }
-        return true;
     }
 
     private boolean isTooLong(AudioTrack track)
@@ -101,105 +86,11 @@ public class PlaylistService
         return trackEnqueuer.addTrackToFront(guild, member, track, queryArgs, channel);
     }
 
-    // ========== Playlist and favorites operations ==========
+    // ========== Playlist operations ==========
 
     public void addCurrentTrackToFavorites(Guild guild, Member member, OutputAdapter output)
     {
-        if (!requireDJPermission(guild, member, output, "add the current track to favorites"))
-            return;
-
-        AudioHandler handler = getHandler(guild);
-        if (handler == null)
-        {
-            output.replyError("There is no player in this server!");
-            return;
-        }
-
-        AudioTrack currentTrack = handler.getPlayer().getPlayingTrack();
-        if (currentTrack == null)
-        {
-            output.replyError("There is no track currently playing!");
-            return;
-        }
-
-        String favoriteEntry = currentTrack.getInfo().uri;
-        if (favoriteEntry == null || favoriteEntry.isBlank())
-        {
-            output.replyError("The current track does not have a valid URI or absolute path to save.");
-            return;
-        }
-        if (!isSupportedFavoriteEntry(favoriteEntry))
-        {
-            output.replyError("Only URI references or absolute file paths for this OS can be added to favorites.");
-            return;
-        }
-
-        PlaylistLoader.PlaylistResult<PlaylistLoader.AppendIfAbsentResult> appendResult =
-                bot.getPlaylistLoader().appendItemIfAbsentResult(FAVORITES_PLAYLIST_NAME, favoriteEntry);
-        if (!appendResult.isSuccess())
-        {
-            output.replyError(PlaylistErrorMessages.toMessage(appendResult.getError()));
-            return;
-        }
-
-        if (appendResult.getValue().getStatus() == PlaylistLoader.AppendIfAbsentStatus.ALREADY_PRESENT)
-        {
-            handler.markCurrentTrackFavorited(favoriteEntry);
-            output.editNowPlaying(handler);
-            output.replyWarning("This track is already favorited");
-            return;
-        }
-
-        handler.markCurrentTrackFavorited(favoriteEntry);
-        output.editNowPlaying(handler);
-        output.replySuccess("Added " + FormatUtil.filter(FormatUtil.getTrackTitle(currentTrack)) + " to Favorites");
-    }
-
-    private static boolean isSupportedFavoriteEntry(String value)
-    {
-        String candidate = value == null ? "" : value.trim();
-        if (candidate.isEmpty())
-            return false;
-        return isUriLikeReference(candidate) || isOsNativeAbsolutePath(candidate);
-    }
-
-    private static boolean isUriLikeReference(String value)
-    {
-        // Avoid treating Windows drive paths (e.g. C:\music\song.mp3) as URI schemes.
-        if (isWindowsAbsolutePathSyntax(value))
-            return false;
-        int colonIndex = value.indexOf(':');
-        if (colonIndex <= 0)
-            return false;
-        for (int i = 0; i < colonIndex; i++)
-        {
-            char c = value.charAt(i);
-            if (!Character.isLetterOrDigit(c) && c != '+' && c != '-' && c != '.')
-                return false;
-        }
-        return true;
-    }
-
-    private static boolean isOsNativeAbsolutePath(String value)
-    {
-        try
-        {
-            if (!Path.of(value).isAbsolute())
-                return false;
-        }
-        catch (RuntimeException ex)
-        {
-            return false;
-        }
-
-        if (WINDOWS_RUNTIME)
-            return isWindowsAbsolutePathSyntax(value);
-        return value.startsWith("/");
-    }
-
-    private static boolean isWindowsAbsolutePathSyntax(String value)
-    {
-        return WINDOWS_DRIVE_ABSOLUTE_PATH.matcher(value).matches() || value.startsWith("\\\\");
+        favoritesService.addCurrentTrackToFavorites(guild, member, output);
     }
 
     public PlaylistNamesInfo getAvailablePlaylistNames()
@@ -503,91 +394,7 @@ public class PlaylistService
 
     public void saveHistoryAsPlaylist(Guild guild, Member member, String playlistName, OutputAdapter output)
     {
-        if (!canSaveHistoryAsPlaylist(guild, member))
-        {
-            output.replyError("You need to be a DJ or the bot owner to save history as a playlist!");
-            return;
-        }
-
-        AudioHandler handler = getHandler(guild);
-        if (handler == null)
-        {
-            output.replyError("There is no player in this server!");
-            return;
-        }
-
-        var history = handler.getQueue().getHistory();
-        if (!requireHistoryEnabled(history, output))
-        {
-            return;
-        }
-
-        List<QueuedTrack> previous = handler.getPreviousTracks();
-        List<String> uris = extractHttpUrisFromHistory(previous);
-        if (uris.isEmpty())
-        {
-            output.replyWarning("No valid track URLs in history to save (only http(s) sources are stored).");
-            return;
-        }
-
-        String sanitized = playlistName.replaceAll("\\s+", "_").replaceAll("[*?|\\/\":<>]", "");
-        if (sanitized.isEmpty())
-        {
-            output.replyError("Please provide a valid playlist name!");
-            return;
-        }
-
-        if (bot.getPlaylistLoader().getPlaylistResult(sanitized).isSuccess())
-        {
-            output.replyError("Playlist `" + sanitized + "` already exists! Choose a different name.");
-            return;
-        }
-
-        PlaylistLoader.PlaylistResult<Void> createResult = bot.getPlaylistLoader().createPlaylistResult(sanitized);
-        if (!createResult.isSuccess())
-        {
-            output.replyError(PlaylistErrorMessages.toMessage(createResult.getError()));
-            return;
-        }
-
-        String content = String.join("\r\n", uris);
-        PlaylistLoader.PlaylistResult<Void> writeResult = bot.getPlaylistLoader().writePlaylistResult(sanitized, content);
-        if (!writeResult.isSuccess())
-        {
-            output.replyError(PlaylistErrorMessages.toMessage(writeResult.getError()));
-            return;
-        }
-        output.replySuccess("Saved " + uris.size() + " tracks from history to playlist `" + sanitized + "`!");
-    }
-
-    private boolean canSaveHistoryAsPlaylist(Guild guild, Member member)
-    {
-        return bot.getConfig().getOwnerId() == member.getIdLong()
-                || DJCommand.checkDJPermission(bot, guild, member);
-    }
-
-    private static List<String> extractHttpUrisFromHistory(List<QueuedTrack> previous)
-    {
-        List<String> uris = new ArrayList<>();
-        for (QueuedTrack qt : previous)
-        {
-            String uri = qt.getTrack().getInfo().uri;
-            if (uri != null && uri.startsWith("http"))
-            {
-                uris.add(uri);
-            }
-        }
-        return uris;
-    }
-
-    private boolean requireHistoryEnabled(PlaybackHistory<QueuedTrack> history, OutputAdapter output)
-    {
-        if (history.getMaxSize() == 0)
-        {
-            output.replyError(HistoryService.HISTORY_DISABLED_MESSAGE);
-            return false;
-        }
-        return true;
+        historyPlaylistService.saveHistoryAsPlaylist(guild, member, playlistName, output);
     }
 
 }

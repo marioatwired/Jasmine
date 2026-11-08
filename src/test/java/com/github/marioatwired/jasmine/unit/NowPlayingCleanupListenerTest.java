@@ -16,6 +16,7 @@
 package com.github.marioatwired.jasmine.unit;
 
 import com.github.marioatwired.jasmine.listener.NowPlayingCleanupListener;
+import com.github.marioatwired.jasmine.testutil.TestConstants;
 import com.github.marioatwired.jasmine.testutil.listener.ListenerTestFixture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,7 +47,7 @@ public class NowPlayingCleanupListenerTest {
 
             verify(fixture.getNowPlayingHandler()).onMessageDelete(
                     fixture.getGuild(),
-                    ListenerTestFixture.MESSAGE_ID
+                    TestConstants.MESSAGE_ID
             );
         }
 

@@ -120,9 +120,6 @@ public class ListenerTestFixture
     /** @deprecated Use {@link TestConstants#OWNER_ID} instead */
     @Deprecated
     public static final long OWNER_ID = TestConstants.OWNER_ID;
-    /** @deprecated Use {@link TestConstants#MESSAGE_ID} instead */
-    @Deprecated
-    public static final long MESSAGE_ID = TestConstants.MESSAGE_ID;
     /** @deprecated Use {@link TestConstants#CHANNEL_ID} instead */
     @Deprecated
     public static final long CHANNEL_ID = TestConstants.CHANNEL_ID;
@@ -253,7 +250,7 @@ public class ListenerTestFixture
         // MessageDeleteEvent defaults
         when(messageDeleteEvent.isFromGuild()).thenReturn(true);
         when(messageDeleteEvent.getGuild()).thenReturn(guild);
-        when(messageDeleteEvent.getMessageIdLong()).thenReturn(MESSAGE_ID);
+        when(messageDeleteEvent.getMessageIdLong()).thenReturn(TestConstants.MESSAGE_ID);
 
         // ButtonInteractionEvent defaults
         when(buttonInteractionEvent.getGuild()).thenReturn(guild);
