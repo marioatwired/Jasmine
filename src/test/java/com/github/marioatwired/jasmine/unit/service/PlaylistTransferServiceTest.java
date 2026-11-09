@@ -97,7 +97,7 @@ class PlaylistTransferServiceTest
     @Test
     void exportPlaylistReturnsRawTextAndEntryCount() throws Exception
     {
-        Files.writeString(temporaryDirectory.resolve("exported_list.txt"),
+        Files.writeString(temporaryDirectory.resolve("Exported_List.txt"),
                 "#shuffle\nhttps://example.com/one\nhttps://example.com/two\n");
 
         PlaylistTransferResult result = service.exportPlaylist("Exported List");
