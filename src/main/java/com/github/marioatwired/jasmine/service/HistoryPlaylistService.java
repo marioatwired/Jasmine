@@ -68,7 +68,7 @@ public class HistoryPlaylistService
             return;
         }
 
-        String sanitized = playlistName.replaceAll("\\s+", "_").replaceAll("[*?|\\/\":<>]", "");
+        String sanitized = PlaylistLoader.sanitizeName(playlistName);
         if (sanitized.isEmpty())
         {
             output.replyError("Please provide a valid playlist name!");

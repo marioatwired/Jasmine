@@ -5,6 +5,18 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Import playlists from attached `.txt` files and export saved playlists as
+  attachments with `/playlist import` and `/playlist export`.
+
+### Changed
+
+- Playlist names are sanitized consistently, including path separators and
+  leading/trailing dots.
+
 ## [0.5.0] - 2026-11-09
 
 ### Added
