@@ -462,7 +462,11 @@ final class PlaylistStorage
 
     private Path playlistPath(Path folder, String name)
     {
-        return folder.resolve(name + ".txt");
+        Path normalizedFolder = folder.toAbsolutePath().normalize();
+        Path path = normalizedFolder.resolve(name + ".txt").normalize();
+        if (!path.startsWith(normalizedFolder))
+            throw new IllegalArgumentException("Invalid playlist name: " + name);
+        return path;
     }
 
     private void appendLine(FileChannel channel, String value) throws IOException

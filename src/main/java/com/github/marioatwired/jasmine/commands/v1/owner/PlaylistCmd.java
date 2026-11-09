@@ -19,10 +19,19 @@ import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.OwnerCommand;
+import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist;
+import com.github.marioatwired.jasmine.service.PlaylistTransferService;
+import com.github.marioatwired.jasmine.service.dto.PlaylistTransferResult;
+import net.dv8tion.jda.api.entities.Message.Attachment;
+import net.dv8tion.jda.api.utils.FileUpload;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Locale;
 
 /**
  *
@@ -37,13 +46,15 @@ public class PlaylistCmd extends OwnerCommand
         this.bot = bot;
         this.guildOnly = false;
         this.name = "playlist";
-        this.arguments = "<append|delete|make|setdefault>";
+        this.arguments = "<append|delete|export|import|make|setdefault>";
         this.help = "playlist management";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.children = new OwnerCommand[]{
             new ListCmd(),
             new AppendlistCmd(),
             new DeletelistCmd(),
+            new ExportCmd(),
+            new ImportCmd(),
             new MakelistCmd(),
             new DefaultlistCmd(bot)
         };
@@ -73,8 +84,7 @@ public class PlaylistCmd extends OwnerCommand
         @Override
         protected void execute(CommandEvent event) 
         {
-            String pname = event.getArgs().replaceAll("\\s+", "_");
-            pname = pname.replaceAll("[*?|\\/\":<>]", "");
+            String pname = PlaylistLoader.sanitizeName(event.getArgs());
             if(pname == null || pname.isEmpty()) 
             {
                 event.replyError("Please provide a name for the playlist!");
@@ -110,7 +120,7 @@ public class PlaylistCmd extends OwnerCommand
         @Override
         protected void execute(CommandEvent event) 
         {
-            String pname = event.getArgs().replaceAll("\\s+", "_");
+            String pname = PlaylistLoader.sanitizeName(event.getArgs());
             if(bot.getPlaylistLoader().getPlaylist(pname)==null)
                 event.reply(event.getClient().getError()+" Playlist `"+pname+"` doesn't exist!");
             else
@@ -148,7 +158,7 @@ public class PlaylistCmd extends OwnerCommand
                 event.reply(event.getClient().getError()+" Please include a playlist name and URLs to add!");
                 return;
             }
-            String pname = parts[0];
+            String pname = PlaylistLoader.sanitizeName(parts[0]);
             Playlist playlist = bot.getPlaylistLoader().getPlaylist(pname);
             if(playlist==null)
                 event.reply(event.getClient().getError()+" Playlist `"+pname+"` doesn't exist!");
@@ -177,6 +187,107 @@ public class PlaylistCmd extends OwnerCommand
         }
     }
     
+    public class ExportCmd extends OwnerCommand
+    {
+        public ExportCmd()
+        {
+            this.name = "export";
+            this.aliases = new String[]{"download"};
+            this.help = "exports a playlist as a .txt file";
+            this.arguments = "<name>";
+            this.guildOnly = false;
+        }
+
+        @Override
+        protected void execute(CommandEvent event)
+        {
+            PlaylistTransferResult result = bot.getMusicService().exportPlaylist(event.getArgs());
+            if (!result.success())
+            {
+                event.replyError(result.message());
+                return;
+            }
+
+            MessageCreateData message = new MessageCreateBuilder()
+                    .setContent(event.getClient().getSuccess() + " " + result.message())
+                    .setFiles(List.of(FileUpload.fromData(result.content(),
+                            result.playlistName() + ".txt")))
+                    .build();
+            event.getChannel().sendMessage(message).queue();
+        }
+    }
+
+    public class ImportCmd extends OwnerCommand
+    {
+        public ImportCmd()
+        {
+            this.name = "import";
+            this.aliases = new String[]{"upload"};
+            this.help = "imports a playlist from an attached .txt file";
+            this.arguments = "<name> (attach .txt)";
+            this.guildOnly = false;
+        }
+
+        @Override
+        protected void execute(CommandEvent event)
+        {
+            String name = event.getArgs().trim();
+            if (name.isEmpty())
+            {
+                event.replyError("Please provide a name for the imported playlist!");
+                return;
+            }
+
+            List<Attachment> attachments = event.getMessage().getAttachments();
+            if (attachments.isEmpty())
+            {
+                event.replyError("Attach a `.txt` playlist file to the command message!");
+                return;
+            }
+
+            Attachment attachment = attachments.get(0);
+            if (!attachment.getFileName().toLowerCase(Locale.ROOT).endsWith(".txt"))
+            {
+                event.replyError("The attached file must be a `.txt` playlist file!");
+                return;
+            }
+            if (attachment.getSize() > PlaylistTransferService.MAX_IMPORT_BYTES)
+            {
+                event.replyError("The attached playlist is too large (maximum 1 MiB).");
+                return;
+            }
+
+            event.reply("Importing playlist...", message ->
+                    attachment.getProxy().download().whenComplete((stream, error) ->
+                    {
+                        if (error != null || stream == null)
+                        {
+                            message.editMessage(event.getClient().getError()
+                                    + " Could not download the playlist file.").queue();
+                            return;
+                        }
+
+                        byte[] content;
+                        try (InputStream input = stream)
+                        {
+                            content = input.readAllBytes();
+                        }
+                        catch (IOException ex)
+                        {
+                            message.editMessage(event.getClient().getError()
+                                    + " Could not read the playlist file.").queue();
+                            return;
+                        }
+
+                        PlaylistTransferResult result = bot.getMusicService().importPlaylist(name, content);
+                        String prefix = result.success()
+                                ? event.getClient().getSuccess()
+                                : event.getClient().getError();
+                        message.editMessage(prefix + " " + result.message()).queue();
+                    }));
+        }
+    }
+
     public class DefaultlistCmd extends AutoplaylistCmd 
     {
         public DefaultlistCmd(Bot bot)

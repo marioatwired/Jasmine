@@ -18,6 +18,7 @@ Business logic
     -> PlaylistService        saved playlist CRUD, queue/play, and orchestration
     -> FavoritesService       add the current track to Favorites
     -> HistoryPlaylistService export playback history to a saved playlist
+    -> PlaylistTransferService import/export playlist text files
     -> PlaylistDraftService   interactive playlist draft state and CRUD
     -> PlaylistPreviewService playlist previews and paginated track views
     -> HistoryService         history queries and history-to-queue operations
@@ -52,7 +53,7 @@ that need to add tracks without depending on the whole `MusicService` facade.
 | `listener` | JDA listeners for voice state, now-playing cleanup, playback buttons, queue/history/playlist/settings interactions, and startup lifecycle. |
 | `playlist` | Playlist model, parsing, and file-system storage. |
 | `queue` | `AbstractQueue`, `LinearQueue`, `FairQueue`, `PlaybackHistory`, and queue persistence. |
-| `service` | `MusicService` facade; `PlayerService`, `QueueService`, `PlaylistService`, `FavoritesService`, `HistoryPlaylistService`, `PlaylistDraftService`, `PlaylistPreviewService`, `HistoryService`, `NowPlayingService`; `SearchService`; `OutputAdapter`, `TrackEnqueuer`; audio load result handlers. |
+| `service` | `MusicService` facade; `PlayerService`, `QueueService`, `PlaylistService`, `FavoritesService`, `HistoryPlaylistService`, `PlaylistTransferService`, `PlaylistDraftService`, `PlaylistPreviewService`, `HistoryService`, `NowPlayingService`; `SearchService`; `OutputAdapter`, `TrackEnqueuer`; audio load result handlers. |
 | `service.dto` | DTOs shared by the facade, services, commands, listeners, and GUI. |
 | `settings` | Per-guild settings and JSON persistence. |
 | `utils` | Formatting, proxy, YouTube OAuth, console redirection, instance lock. |
@@ -151,6 +152,8 @@ delegates to focused services and owns no service-layer business logic:
   orchestration of favorites/history export.
 - `FavoritesService`: adds the currently playing track to the favorites playlist.
 - `HistoryPlaylistService`: exports http(s) playback history to a saved playlist.
+- `PlaylistTransferService`: imports playlist text attachments and exports raw
+  playlist files without applying shuffle directives.
 - `PlaylistDraftService`: interactive playlist draft state, mutations, saves, and
   discards.
 - `PlaylistPreviewService`: playlist track previews and paginated track views.
@@ -227,6 +230,8 @@ history, playlist, volume, repeat, shuffle, skip, stop, and pause behavior.
 `PlaylistPreviewServiceTest` cover the focused services directly.
 `QueuePersistenceServiceTest` covers queue and history snapshots, restoration,
 malformed state files, and failed track reloads.
+`PlaylistTransferServiceTest` covers import validation, raw export, and playlist
+name sanitization.
 `AudioLoadResultHandlersTest` covers load results and fallback paths.
 `SearchCmdTest` and `ForceRemoveCmdTest` cover the select-menu interaction flows.
 `PlaylistParserTest` covers playlist parsing and shuffle directives.

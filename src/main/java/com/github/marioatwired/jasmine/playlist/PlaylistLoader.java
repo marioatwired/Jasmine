@@ -155,6 +155,26 @@ public class PlaylistLoader
     private final BotConfig config;
     private final PlaylistStorage storage;
 
+    /**
+     * Normalizes a user-provided playlist name into a safe file name.
+     * Whitespace becomes underscores, path separators and reserved characters
+     * are removed, and leading/trailing dots are stripped.
+     *
+     * @param name raw playlist name
+     * @return a safe playlist name, or an empty string when no usable name remains
+     */
+    public static String sanitizeName(String name)
+    {
+        if (name == null)
+            return "";
+
+        String sanitized = name.trim().replaceAll("\\s+", "_");
+        sanitized = sanitized.replaceAll("[\\\\/:*?\"<>|]", "");
+        sanitized = sanitized.replaceAll("\\p{Cntrl}", "");
+        sanitized = sanitized.replaceAll("^\\.+|\\.+$", "");
+        return sanitized;
+    }
+
     public PlaylistLoader(BotConfig config)
     {
         this.config = config;
@@ -179,6 +199,11 @@ public class PlaylistLoader
     public PlaylistResult<List<String>> getPlaylistNamesResult()
     {
         return storage.getPlaylistNamesResult();
+    }
+
+    public PlaylistResult<List<String>> readPlaylistResult(String name)
+    {
+        return storage.readPlaylistResult(name);
     }
 
     public List<String> getPlaylistNames()

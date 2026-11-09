@@ -25,6 +25,7 @@ import com.github.marioatwired.jasmine.service.dto.PlaylistDraftMutationResult;
 import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
 import com.github.marioatwired.jasmine.service.dto.PlaylistPreviewWithTracks;
 import com.github.marioatwired.jasmine.service.dto.PlaylistTracksPageInfo;
+import com.github.marioatwired.jasmine.service.dto.PlaylistTransferResult;
 import com.github.marioatwired.jasmine.service.dto.QueueInfo;
 import com.github.marioatwired.jasmine.service.dto.TrackAddResult;
 import com.github.marioatwired.jasmine.service.dto.VolumeResult;
@@ -53,6 +54,7 @@ public class MusicService
     private final NowPlayingService nowPlayingService;
     private final HistoryService historyService;
     private final PlaylistService playlistService;
+    private final PlaylistTransferService playlistTransferService;
 
     public MusicService(Bot bot)
     {
@@ -66,6 +68,7 @@ public class MusicService
         this.nowPlayingService = new NowPlayingService(bot);
         this.historyService = new HistoryService(bot, playerService);
         this.playlistService = new PlaylistService(bot, playerService);
+        this.playlistTransferService = new PlaylistTransferService(bot);
         LOG.info("MusicService initialized");
     }
 
@@ -512,6 +515,16 @@ public class MusicService
     public PlaylistNamesInfo getAvailablePlaylistNames()
     {
         return playlistService.getAvailablePlaylistNames();
+    }
+
+    public PlaylistTransferResult importPlaylist(String name, byte[] content)
+    {
+        return playlistTransferService.importPlaylist(name, content);
+    }
+
+    public PlaylistTransferResult exportPlaylist(String name)
+    {
+        return playlistTransferService.exportPlaylist(name);
     }
 
     /**

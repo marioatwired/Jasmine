@@ -64,6 +64,25 @@ class PlaylistLoaderTest
     }
 
     @Test
+    @DisplayName("sanitizeName() produces safe playlist file names")
+    void sanitizeName_producesSafeFileNames()
+    {
+        assertEquals("My_List", PlaylistLoader.sanitizeName(" My List "));
+        assertEquals("abc", PlaylistLoader.sanitizeName("a/b\\c"));
+        assertEquals("evil", PlaylistLoader.sanitizeName("../evil"));
+        assertEquals("evil", PlaylistLoader.sanitizeName("..\\evil"));
+        assertEquals("", PlaylistLoader.sanitizeName(" ... "));
+        assertEquals("", PlaylistLoader.sanitizeName(null));
+    }
+
+    @Test
+    @DisplayName("playlist paths cannot escape the storage folder")
+    void playlistPath_rejectsTraversal()
+    {
+        assertThrows(IllegalArgumentException.class, () -> loader.getPlaylist("../outside"));
+    }
+
+    @Test
     @DisplayName("loadTracks() invokes callback only after all items complete")
     void loadTracks_invokesCallbackOnlyAfterAllItemsComplete() throws IOException
     {
