@@ -45,24 +45,24 @@
 2. Download the latest `Jasmine-<version>.jar` from [Releases](https://github.com/marioatwired/Jasmine/releases/latest).
 3. Generate a default configuration:
    ```bash
-   java -jar Jasmine-0.5.0.jar generate-config
+   java -jar Jasmine-0.6.0.jar generate-config
    ```
 4. Edit `config.txt` and set at least `discord.token` and `discord.owner`.
 5. Start the bot:
    ```bash
-   java -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar Jasmine-0.5.0.jar
+   java -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar Jasmine-0.6.0.jar
    ```
 
 On headless servers, add `-Dnogui=true`:
 
 ```bash
-java -Dfile.encoding=UTF-8 -Dnogui=true --enable-native-access=ALL-UNNAMED -jar Jasmine-0.5.0.jar
+java -Dfile.encoding=UTF-8 -Dnogui=true --enable-native-access=ALL-UNNAMED -jar Jasmine-0.6.0.jar
 ```
 
 On Windows PowerShell, quote the JVM options:
 
 ```powershell
-java "-Dfile.encoding=UTF-8" "-Dnogui=true" "--enable-native-access=ALL-UNNAMED" "-jar" ".\Jasmine-0.5.0.jar"
+java "-Dfile.encoding=UTF-8" "-Dnogui=true" "--enable-native-access=ALL-UNNAMED" "-jar" ".\Jasmine-0.6.0.jar"
 ```
 
 The first run uses the default prefix `@mention`. You can change it in `config.txt` under `commands.prefix` or with the `/prefix` command.
@@ -96,13 +96,13 @@ Each GitHub release includes a `Jasmine-<version>.jar.sha256` checksum next to t
 On Linux or macOS, place both files in the same directory and run:
 
 ```bash
-sha256sum -c Jasmine-0.5.0.jar.sha256
+sha256sum -c Jasmine-0.6.0.jar.sha256
 ```
 
 On Windows PowerShell, compute the hash and compare it with the checksum file:
 
 ```powershell
-Get-FileHash .\Jasmine-0.5.0.jar -Algorithm SHA256
+Get-FileHash .\Jasmine-0.6.0.jar -Algorithm SHA256
 ```
 
 ## Configuration
@@ -132,7 +132,7 @@ Requirements: JDK 25 and Maven 3.8+.
 ```bash
 ./mvnw clean verify
 ./mvnw package
-java -Dnogui=true --enable-native-access=ALL-UNNAMED -jar target/jasmine-0.5.0-All.jar
+java -Dnogui=true --enable-native-access=ALL-UNNAMED -jar target/jasmine-0.6.0-All.jar
 ```
 
 On Windows, use `mvnw.cmd` instead of `./mvnw`.

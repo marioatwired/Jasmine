@@ -1,6 +1,6 @@
 services:
   jasmine:
-    image: ghcr.io/marioatwired/jasmine:latest # or ghcr.io/marioatwired/jasmine:0.5.0
+    image: ghcr.io/marioatwired/jasmine:latest # or ghcr.io/marioatwired/jasmine:0.6.0
     container_name: jasmine
     # The container runs as non-root user 'jasmine' (UID 10001) for security.
     # Ensure the mounted volume directory is readable/writable by UID 10001,
