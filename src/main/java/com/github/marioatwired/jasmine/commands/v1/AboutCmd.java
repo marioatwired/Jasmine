@@ -32,6 +32,7 @@ import java.awt.Color;
  * About command with version information sourced from runtime metadata rather
  * than the unresolved build placeholder shipped by JDA-Chewtils.
  */
+@SuppressWarnings("deprecation") // JDA-Chewtils has no non-deprecated guildOnly replacement yet.
 public class AboutCmd extends Command
 {
     private static final String FEATURE_ICON = "\uD83C\uDFB6";
@@ -69,7 +70,7 @@ public class AboutCmd extends Command
 
         EmbedBuilder builder = new EmbedBuilder()
                 .setColor(event.isFromType(ChannelType.TEXT)
-                        ? event.getGuild().getSelfMember().getColor()
+                        ? event.getGuild().getSelfMember().getColors().getPrimary()
                         : color)
                 .setAuthor("All about " + event.getSelfUser().getName() + "!",
                         null, event.getSelfUser().getAvatarUrl())
