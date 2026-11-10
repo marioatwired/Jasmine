@@ -56,10 +56,39 @@ jobs:
             target/failsafe-reports
           if-no-files-found: ignore
 
+  docker-smoke:
+    name: Docker Smoke Test
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build smoke image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: jasmine:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Docker smoke test
+        run: bash scripts/smoke-test-docker.sh jasmine:smoke
+
   docker:
     name: Publish Docker Image
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/master')
-    needs: test
+    needs:
+      - test
+      - docker-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:

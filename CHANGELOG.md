@@ -5,6 +5,16 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- CI and release workflows now build the Docker image and run a container smoke
+  test for first-run config generation and environment-based credentials before
+  publishing.
+- The release workflow now rejects tags that do not point to the current
+  `master` head.
+
 ## [0.7.0] - 2026-11-10
 
 ### Added
