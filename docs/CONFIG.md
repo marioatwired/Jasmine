@@ -25,6 +25,22 @@ discord {
 
 Everything else has a default.
 
+## Environment overrides
+
+Docker deployments can provide credentials without editing `config.txt`:
+
+| Variable | Description |
+|---|---|
+| `JASMINE_TOKEN` | Discord bot token. |
+| `JASMINE_OWNER` | Discord user ID of the bot owner. |
+| `JASMINE_TOKEN_FILE` | Path to a file containing the token (for Docker secrets). |
+| `JASMINE_OWNER_FILE` | Path to a file containing the owner ID. |
+
+`DISCORD_TOKEN` and `DISCORD_OWNER` are accepted as aliases. Direct variables
+take precedence over file variables, and environment values take precedence
+over values from `config.txt`. You can set only one of them; the other is read
+from the config file or prompted for when an interactive terminal is available.
+
 ## Sections
 
 ### `meta`

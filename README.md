@@ -30,6 +30,7 @@
 - YouTube OAuth device flow for sources that require sign-in.
 - Granular HTTP proxy configuration for Lavaplayer, JDA, and GitHub update checks.
 - Docker image with a minimal JRE and multi-architecture support (`amd64` and `arm64`).
+- Docker credentials via environment variables or Docker secrets.
 - No external API keys required besides a Discord bot token.
 
 ## Requirements
@@ -94,6 +95,26 @@ sudo chown -R 10001:10001 /path/to/jasmine
 ```
 
 If `config.txt` or `serversettings.json` is read-only because it was created by another user, fix the mount ownership with the command above. Pulling a new image does not change host file ownership.
+
+You can provide Discord credentials without editing `config.txt`:
+
+```yaml
+services:
+  jasmine:
+    environment:
+      JASMINE_TOKEN: "YOUR_BOT_TOKEN"
+      JASMINE_OWNER: "123456789012345678"
+```
+
+For Docker secrets, point Jasmine at files instead:
+
+```yaml
+    environment:
+      JASMINE_TOKEN_FILE: /run/secrets/discord_token
+      JASMINE_OWNER_FILE: /run/secrets/discord_owner
+```
+
+Environment values override `config.txt`. Prefer `*_FILE` secrets when the token must not appear in `docker inspect` or the Compose file.
 
 ## Playlist management
 

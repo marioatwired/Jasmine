@@ -110,6 +110,30 @@ cp docker-compose.example.yml docker-compose.yml
 docker compose up -d
 ```
 
+### Configure Docker without editing config.txt
+
+Set these environment variables in Compose, ZimaOS/CasaOS, Portainer, or your
+orchestrator:
+
+```yaml
+environment:
+  JASMINE_TOKEN: "YOUR_BOT_TOKEN"
+  JASMINE_OWNER: "123456789012345678"
+```
+
+For Docker secrets, use files instead:
+
+```yaml
+environment:
+  JASMINE_TOKEN_FILE: /run/secrets/discord_token
+  JASMINE_OWNER_FILE: /run/secrets/discord_owner
+```
+
+Direct variables take precedence over `*_FILE` values, and environment values
+override `config.txt`. If both token and owner are present, Jasmine can start
+without editing the generated file. `DISCORD_TOKEN` and `DISCORD_OWNER` are also
+accepted as aliases.
+
 ## Troubleshooting
 
 | Symptom | Check |

@@ -9,6 +9,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Docker credentials can be supplied with `JASMINE_TOKEN` / `JASMINE_OWNER`, or
+  with `JASMINE_TOKEN_FILE` / `JASMINE_OWNER_FILE` for Docker secrets. The
+  `DISCORD_TOKEN` and `DISCORD_OWNER` aliases are also supported.
 - Added `playlist view` / `playlist edit` with paginated playlist tracks and
   interactive editing.
 - Added `playlist remove`, `playlist move`, and `playlist replace` for editing
