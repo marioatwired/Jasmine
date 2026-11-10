@@ -130,7 +130,8 @@ class ConfigUpdaterIntegrationTest extends BaseConfigTest {
                     configFile, migratedUser, diagnostics, ConfigUpdateType.MIGRATION);
 
             assertNotNull(updatedPath);
-            assertTrue(readFileContent(configFile).contains("meta.configVersion"));
+            Config generated = ConfigFactory.parseString(readFileContent(configFile));
+            assertTrue(generated.hasPath("meta.configVersion"));
         }
 
         @Test
