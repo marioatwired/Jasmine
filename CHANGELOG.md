@@ -23,6 +23,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- First startup now generates `config.txt` when it is missing instead of
+  immediately prompting for a bot token. This makes the Docker image usable on
+  bind mounts where stdin is not interactive.
 - `serversettings.json` writes now use an atomic file replacement fallback when
   the existing file is read-only.
 - Playlist shuffle directives are preserved when editing a shuffled playlist.

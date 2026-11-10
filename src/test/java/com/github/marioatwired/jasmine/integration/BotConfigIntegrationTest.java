@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -98,6 +99,21 @@ class BotConfigIntegrationTest extends BaseConfigTest {
             assertEquals(20, config.getMaxYTPlaylistPages());
         }
         
+        @Test
+        @DisplayName("Creates a default config when the file is missing")
+        void createsDefaultConfigWhenFileIsMissing() throws IOException {
+            Path configFile = tempDir.resolve("config-missing.conf");
+            setConfigFileProperty(configFile);
+
+            BotConfig config = new BotConfig(mockUserInteraction);
+            config.load();
+
+            assertFalse(config.isValid());
+            assertTrue(Files.exists(configFile));
+            assertTrue(readFileContent(configFile).contains("# START OF JASMINE CONFIG"));
+            assertEquals(0, mockUserInteraction.getPromptCalls().size());
+        }
+
         @Test
         @DisplayName("Loads config with missing required fields and prompts")
         void loadsConfigWithMissingRequiredFieldsAndPrompts() throws IOException {

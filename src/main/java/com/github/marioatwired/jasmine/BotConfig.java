@@ -84,7 +84,16 @@ public class BotConfig {
 
         try {
             path = ConfigIO.getConfigPath();
-            
+
+            // First run: create a template instead of dropping straight into the
+            // token prompt. This is especially important in containers, where
+            // stdin is not interactive and the prompt would immediately fail.
+            if (!ConfigIO.configFileExists(path)) {
+                LOGGER.info("Config file not found at {}; generating a default config.", path.toAbsolutePath());
+                writeDefaultConfig(userInteraction);
+                return;
+            }
+
             // Load and migrate config
             ConfigLoadResult loadResult = loadAndMigrateConfig();
             
@@ -378,9 +387,12 @@ public class BotConfig {
             userInteraction.alert(Level.INFO, "Jasmine Config",
                     "Writing default config file to " + path.toAbsolutePath().toString());
             ConfigIO.writeConfigFile(path, ConfigIO.loadDefaultConfig());
+            userInteraction.alert(Level.INFO, "Jasmine Config",
+                    "Default config created. Edit `discord.token` and `discord.owner`, then restart Jasmine.");
         } catch (Exception ex) {
             userInteraction.alert(Level.ERROR, "Jasmine Config",
-                    "An error occurred writing the default config file: " + ex.getMessage());
+                    "An error occurred writing the default config file: " + ex.getMessage()
+                    + "\nConfig Location: " + path.toAbsolutePath());
         }
     }
 
