@@ -211,8 +211,9 @@ class BotConfigMigrationIntegrationTest extends BaseConfigTest {
             // Mock ConfigIO.loadDefaults() to return our fake defaults
             try (MockedStatic<ConfigIO> mockedConfigIO = Mockito.mockStatic(ConfigIO.class)) {
                 mockedConfigIO.when(ConfigIO::loadDefaults).thenReturn(fakeDefaults);
-                // Let getConfigPath() work normally
+                // Let getConfigPath() work normally and keep the existing test config
                 mockedConfigIO.when(ConfigIO::getConfigPath).thenCallRealMethod();
+                mockedConfigIO.when(() -> ConfigIO.configFileExists(configFile)).thenReturn(true);
                 
                 BotConfig config = new BotConfig(mockUserInteraction);
                 config.load();
