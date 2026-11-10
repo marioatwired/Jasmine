@@ -5,6 +5,20 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `/playlists` now shows the number of songs in each playlist.
+- Added `/playlist addcurrent` and `playlist addcurrent` to save the currently
+  playing track to a playlist.
+- Added `/playlist rename` and `playlist rename` to rename saved playlists.
+
+### Changed
+
+- Playlist append commands now skip duplicate entries and report how many were
+  skipped.
+
 ## [0.8.0] - 2026-11-10
 
 ### Added

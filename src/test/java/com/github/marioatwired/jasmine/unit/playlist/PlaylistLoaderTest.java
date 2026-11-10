@@ -83,6 +83,29 @@ class PlaylistLoaderTest
     }
 
     @Test
+    @DisplayName("renamePlaylistResult() moves a playlist and rejects collisions")
+    void renamePlaylistResult_movesAndRejectsCollisions() throws IOException
+    {
+        Files.writeString(tempDir.resolve("old.txt"), "https://example.com/old\n");
+        Files.writeString(tempDir.resolve("taken.txt"), "https://example.com/taken\n");
+
+        PlaylistLoader.PlaylistResult<Void> renamed = loader.renamePlaylistResult("old", "new");
+
+        assertTrue(renamed.isSuccess());
+        assertFalse(Files.exists(tempDir.resolve("old.txt")));
+        assertEquals(List.of("https://example.com/old"),
+                Files.readAllLines(tempDir.resolve("new.txt")));
+
+        PlaylistLoader.PlaylistResult<Void> collision = loader.renamePlaylistResult("new", "taken");
+
+        assertFalse(collision.isSuccess());
+        assertEquals(PlaylistLoader.PlaylistErrorType.PLAYLIST_ALREADY_EXISTS,
+                collision.getError().getType());
+        assertEquals(List.of("https://example.com/taken"),
+                Files.readAllLines(tempDir.resolve("taken.txt")));
+    }
+
+    @Test
     @DisplayName("loadTracks() invokes callback only after all items complete")
     void loadTracks_invokesCallbackOnlyAfterAllItemsComplete() throws IOException
     {

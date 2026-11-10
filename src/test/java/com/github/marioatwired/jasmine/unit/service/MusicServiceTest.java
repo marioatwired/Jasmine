@@ -1234,6 +1234,31 @@ public class MusicServiceTest
         }
 
         @Test
+        @DisplayName("getAvailablePlaylistNames() includes item counts")
+        void getAvailablePlaylistNames_includesItemCounts()
+        {
+            com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist first =
+                    mock(com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist.class);
+            com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist second =
+                    mock(com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist.class);
+            when(fixture.getPlaylistLoader().getPlaylistNamesResult())
+                    .thenReturn(com.github.marioatwired.jasmine.playlist.PlaylistLoader.PlaylistResult.success(
+                            List.of("first", "second")));
+            when(fixture.getPlaylistLoader().getPlaylistResult("first"))
+                    .thenReturn(com.github.marioatwired.jasmine.playlist.PlaylistLoader.PlaylistResult.success(first));
+            when(fixture.getPlaylistLoader().getPlaylistResult("second"))
+                    .thenReturn(com.github.marioatwired.jasmine.playlist.PlaylistLoader.PlaylistResult.success(second));
+            when(first.getItems()).thenReturn(List.of("a", "b"));
+            when(second.getItems()).thenReturn(List.of("c"));
+
+            PlaylistNamesInfo info = musicService.getAvailablePlaylistNames();
+
+            assertFalse(info.hasError());
+            assertEquals(2, info.itemCount("first"));
+            assertEquals(1, info.itemCount("second"));
+        }
+
+        @Test
         @DisplayName("queuePlaylist() refreshes now playing when tracks were loaded and player is active")
         void queuePlaylist_refreshesNowPlaying_whenTracksLoadedAndPlayerActive()
         {
@@ -1473,6 +1498,27 @@ public class MusicServiceTest
             verify(fixture.getAudioHandler()).markCurrentTrackFavorited("https://example.com/track");
             output.assertNowPlayingEdited();
             output.assertWarningMessage("This track is already favorited");
+        }
+
+        @Test
+        @DisplayName("addCurrentTrackToPlaylist() adds the current track to an existing playlist")
+        void addCurrentTrackToPlaylist_addsCurrentTrack()
+        {
+            fixture.withDJPermission()
+                    .withPlayingTrack();
+            com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist playlist =
+                    mock(com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist.class);
+            when(fixture.getPlaylistLoader().getPlaylistResult("mix"))
+                    .thenReturn(com.github.marioatwired.jasmine.playlist.PlaylistLoader.PlaylistResult.success(playlist));
+            when(fixture.getPlaylistLoader().appendItemIfAbsentResult("mix", "https://example.com/track"))
+                    .thenReturn(com.github.marioatwired.jasmine.playlist.PlaylistLoader.PlaylistResult.success(
+                            com.github.marioatwired.jasmine.playlist.PlaylistLoader.AppendIfAbsentResult.appended()));
+
+            musicService.addCurrentTrackToPlaylist(fixture.getGuild(), fixture.getMember(), "mix", output);
+
+            verify(fixture.getPlaylistLoader()).appendItemIfAbsentResult("mix", "https://example.com/track");
+            verify(fixture.getAudioHandler(), never()).markCurrentTrackFavorited(anyString());
+            output.assertSuccessMessage("Added Test Track to playlist `mix`");
         }
 
         @Test

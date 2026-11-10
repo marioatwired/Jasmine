@@ -40,7 +40,8 @@ public class PlaylistLoader
     {
         INVALID_CONFIG,
         STORAGE_UNAVAILABLE,
-        PLAYLIST_NOT_FOUND
+        PLAYLIST_NOT_FOUND,
+        PLAYLIST_ALREADY_EXISTS
     }
 
     public static final class PlaylistError
@@ -249,6 +250,11 @@ public class PlaylistLoader
     public PlaylistResult<Void> writePlaylistResult(String name, String text)
     {
         return storage.writePlaylistResult(name, text);
+    }
+
+    public PlaylistResult<Void> renamePlaylistResult(String oldName, String newName)
+    {
+        return storage.renamePlaylistResult(oldName, newName);
     }
 
     public PlaylistResult<AppendIfAbsentResult> appendItemIfAbsentResult(String name, String item)

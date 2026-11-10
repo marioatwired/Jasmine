@@ -18,6 +18,7 @@ package com.github.marioatwired.jasmine.commands.v2.music;
 import com.jagrosh.jdautilities.command.SlashCommand;
 import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.github.marioatwired.jasmine.Bot;
+import com.github.marioatwired.jasmine.commands.v2.SlashOutputAdapters.SlashEventOutputAdapter;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
 import com.github.marioatwired.jasmine.service.dto.PlaylistMutationResult;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
@@ -44,6 +45,8 @@ public class PlaylistSlashCmd extends SlashCommand
         this.children = new SlashCommand[]{
             new ViewCmd(),
             new AppendCmd(),
+            new AddCurrentCmd(),
+            new RenameCmd(),
             new RemoveCmd(),
             new MoveCmd(),
             new ReplaceCmd()
@@ -53,8 +56,8 @@ public class PlaylistSlashCmd extends SlashCommand
     @Override
     protected void execute(SlashCommandEvent event)
     {
-        event.reply("Use `/playlist view`, `/playlist append`, `/playlist remove`, "
-                + "`/playlist move`, or `/playlist replace`.")
+        event.reply("Use `/playlist view`, `append`, `addcurrent`, `rename`, "
+                + "`remove`, `move`, or `replace`.")
                 .setEphemeral(true)
                 .queue();
     }
@@ -180,8 +183,79 @@ public class PlaylistSlashCmd extends SlashCommand
 
             PlaylistMutationResult result = bot.getMusicService()
                     .appendPlaylistItems(name, items);
-            replyResult(event, result, "Added " + items.size()
-                    + " item(s) to playlist `" + name + "`.");
+            if (!result.success)
+            {
+                replyResult(event, result, null);
+                return;
+            }
+            if (result.addedItems == 0)
+            {
+                event.reply(event.getClient().getWarning() + " All " + result.duplicateItems
+                        + " item(s) are already in playlist `" + name + "`.")
+                        .setEphemeral(true)
+                        .queue();
+                return;
+            }
+            String message = "Added " + result.addedItems + " item(s) to playlist `" + name + "`.";
+            if (result.duplicateItems > 0)
+            {
+                message += " " + result.duplicateItems + " duplicate(s) skipped.";
+            }
+            replyResult(event, result, message);
+        }
+    }
+
+    public class AddCurrentCmd extends EditorCommand
+    {
+        public AddCurrentCmd()
+        {
+            this.name = "addcurrent";
+            this.help = "add the current track to a saved playlist";
+            this.options = List.of(
+                    new OptionData(OptionType.STRING, "name", "the playlist name", true)
+            );
+        }
+
+        @Override
+        protected void doEdit(SlashCommandEvent event)
+        {
+            String name = playlistName(event);
+            if (name == null)
+            {
+                return;
+            }
+            bot.getMusicService().addCurrentTrackToPlaylist(event.getGuild(), event.getMember(),
+                    name, new SlashEventOutputAdapter(event));
+        }
+    }
+
+    public class RenameCmd extends EditorCommand
+    {
+        public RenameCmd()
+        {
+            this.name = "rename";
+            this.help = "rename a saved playlist";
+            this.options = List.of(
+                    new OptionData(OptionType.STRING, "old", "current playlist name", true),
+                    new OptionData(OptionType.STRING, "new", "new playlist name", true)
+            );
+        }
+
+        @Override
+        protected void doEdit(SlashCommandEvent event)
+        {
+            String oldName = event.getOption("old").getAsString();
+            String newName = event.getOption("new").getAsString();
+            PlaylistMutationResult result = bot.getMusicService()
+                    .renamePlaylist(oldName, newName);
+            if (!result.success)
+            {
+                replyResult(event, result, null);
+                return;
+            }
+            event.reply(event.getClient().getSuccess() + " Renamed playlist `"
+                    + PlaylistLoader.sanitizeName(oldName) + "` to `"
+                    + PlaylistLoader.sanitizeName(newName) + "`.").queue();
         }
     }
 
@@ -289,6 +363,9 @@ public class PlaylistSlashCmd extends SlashCommand
                     .queue();
             return;
         }
-        event.reply(event.getClient().getSuccess() + " " + successMessage).queue();
+        if (successMessage != null)
+        {
+            event.reply(event.getClient().getSuccess() + " " + successMessage).queue();
+        }
     }
 }

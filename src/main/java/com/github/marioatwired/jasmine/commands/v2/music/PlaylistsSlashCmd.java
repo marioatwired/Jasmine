@@ -32,6 +32,7 @@ import net.dv8tion.jda.api.entities.emoji.Emoji;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -77,7 +78,8 @@ public class PlaylistsSlashCmd extends MusicSlashCommand
             int playlistsOnPage = getPlaylistsOnPage(page, list.size());
             Color color = event.getMember() == null ? null : event.getMember().getColors().getPrimary();
 
-            MessageEmbed embed = buildPlaylistsEmbed(list, page, totalPages, 0, color);
+            MessageEmbed embed = buildPlaylistsEmbed(list, playlistNamesInfo.itemCounts,
+                    page, totalPages, 0, color);
             List<ActionRow> components = buildPlaylistsComponents(page, totalPages, playlistsOnPage, 0, userId);
             event.replyEmbeds(embed).setComponents(components).queue();
         }
@@ -89,10 +91,17 @@ public class PlaylistsSlashCmd extends MusicSlashCommand
     public static MessageEmbed buildPlaylistsEmbed(List<String> playlists, int page, int totalPages,
                                                    int selectedIndex, Color memberColor)
     {
+        return buildPlaylistsEmbed(playlists, Map.of(), page, totalPages, selectedIndex, memberColor);
+    }
+
+    public static MessageEmbed buildPlaylistsEmbed(List<String> playlists, Map<String, Integer> itemCounts,
+                                                   int page, int totalPages,
+                                                   int selectedIndex, Color memberColor)
+    {
         int startIndex = (page - 1) * PLAYLISTS_PER_PAGE;
         int endIndex = Math.min(startIndex + PLAYLISTS_PER_PAGE, playlists.size());
         List<String> lineContents = playlists.subList(startIndex, endIndex).stream()
-                .map(name -> "`" + formatPlaylistDisplayLabel(name) + "`")
+                .map(name -> formatPlaylistLine(name, itemCounts == null ? null : itemCounts.get(name)))
                 .collect(Collectors.toList());
 
         String description = PaginatedListEmbedUtil.buildNumberedListSection(
@@ -246,6 +255,16 @@ public class PlaylistsSlashCmd extends MusicSlashCommand
             return FAVORITES_DISPLAY_LABEL;
         }
         return playlistName;
+    }
+
+    private static String formatPlaylistLine(String playlistName, Integer itemCount)
+    {
+        String line = "`" + formatPlaylistDisplayLabel(playlistName) + "`";
+        if (itemCount == null)
+        {
+            return line;
+        }
+        return line + " (" + itemCount + (itemCount == 1 ? " song" : " songs") + ")";
     }
 
     /**

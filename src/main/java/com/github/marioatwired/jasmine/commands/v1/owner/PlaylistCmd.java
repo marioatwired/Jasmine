@@ -19,6 +19,7 @@ import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.OwnerCommand;
+import com.github.marioatwired.jasmine.commands.v1.TextOutputAdapters.SimpleOutputAdapter;
 import com.github.marioatwired.jasmine.commands.v2.music.PlaylistViewSupport;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
 import com.github.marioatwired.jasmine.service.PlaylistTransferService;
@@ -49,7 +50,7 @@ public class PlaylistCmd extends Command
         this.bot = bot;
         this.guildOnly = false;
         this.name = "playlist";
-        this.arguments = "<all|view|append|remove|move|replace|make|delete|export|import|setdefault>";
+        this.arguments = "<all|view|append|addcurrent|rename|remove|move|replace|make|delete|export|import|setdefault>";
         this.help = "playlist management";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.category = new Category("Playlist");
@@ -57,6 +58,8 @@ public class PlaylistCmd extends Command
             new ListCmd(),
             new ViewCmd(),
             new AppendlistCmd(),
+            new AddCurrentCmd(),
+            new RenameCmd(),
             new RemovelistCmd(),
             new MovelistCmd(),
             new ReplacelistCmd(),
@@ -223,8 +226,81 @@ public class PlaylistCmd extends Command
                 event.replyError(result.errorMessage);
                 return;
             }
-            event.replySuccess("Successfully added "+items.size()
-                    +" item(s) to playlist `"+pname+"`!");
+            if(result.addedItems == 0)
+            {
+                event.replyWarning("All "+result.duplicateItems
+                        +" item(s) are already in playlist `"+pname+"`.");
+                return;
+            }
+            String message = "Successfully added "+result.addedItems
+                    +" item(s) to playlist `"+pname+"`!";
+            if(result.duplicateItems > 0)
+                message += " "+result.duplicateItems+" duplicate(s) skipped.";
+            event.replySuccess(message);
+        }
+    }
+
+    public class AddCurrentCmd extends Command
+    {
+        public AddCurrentCmd()
+        {
+            this.name = "addcurrent";
+            this.aliases = new String[]{"savecurrent", "addplaying"};
+            this.help = "adds the current track to a playlist (DJ)";
+            this.arguments = "<name>";
+            this.guildOnly = false;
+        }
+
+        @Override
+        protected void execute(CommandEvent event)
+        {
+            if(!requireEditor(event))
+                return;
+
+            String name = event.getArgs().trim();
+            if(name.isEmpty())
+            {
+                event.replyError("Please include a playlist name.");
+                return;
+            }
+            bot.getMusicService().addCurrentTrackToPlaylist(event.getGuild(), event.getMember(),
+                    name, new SimpleOutputAdapter(event));
+        }
+    }
+
+    public class RenameCmd extends Command
+    {
+        public RenameCmd()
+        {
+            this.name = "rename";
+            this.aliases = new String[]{"renamelist"};
+            this.help = "renames a playlist (DJ)";
+            this.arguments = "<old> <new>";
+            this.guildOnly = false;
+        }
+
+        @Override
+        protected void execute(CommandEvent event)
+        {
+            if(!requireEditor(event))
+                return;
+
+            String[] parts = event.getArgs().trim().split("\\s+", 2);
+            if(parts.length != 2)
+            {
+                event.replyError("Usage: `playlist rename <old> <new>`");
+                return;
+            }
+
+            PlaylistMutationResult result = bot.getMusicService()
+                    .renamePlaylist(parts[0], parts[1]);
+            if(!result.success)
+            {
+                event.replyError(result.errorMessage);
+                return;
+            }
+            event.replySuccess("Renamed playlist `"+PlaylistLoader.sanitizeName(parts[0])
+                    +"` to `"+PlaylistLoader.sanitizeName(parts[1])+"`.");
         }
     }
 

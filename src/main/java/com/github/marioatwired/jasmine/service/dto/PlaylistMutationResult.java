@@ -23,21 +23,31 @@ public class PlaylistMutationResult
     public final boolean success;
     public final String errorMessage;
     public final int totalItems;
+    public final int addedItems;
+    public final int duplicateItems;
 
-    private PlaylistMutationResult(boolean success, String errorMessage, int totalItems)
+    private PlaylistMutationResult(boolean success, String errorMessage, int totalItems,
+                                   int addedItems, int duplicateItems)
     {
         this.success = success;
         this.errorMessage = errorMessage;
         this.totalItems = totalItems;
+        this.addedItems = addedItems;
+        this.duplicateItems = duplicateItems;
     }
 
     public static PlaylistMutationResult success(int totalItems)
     {
-        return new PlaylistMutationResult(true, null, totalItems);
+        return new PlaylistMutationResult(true, null, totalItems, 0, 0);
+    }
+
+    public static PlaylistMutationResult appendSuccess(int totalItems, int addedItems, int duplicateItems)
+    {
+        return new PlaylistMutationResult(true, null, totalItems, addedItems, duplicateItems);
     }
 
     public static PlaylistMutationResult error(String errorMessage)
     {
-        return new PlaylistMutationResult(false, errorMessage, 0);
+        return new PlaylistMutationResult(false, errorMessage, 0, 0, 0);
     }
 }

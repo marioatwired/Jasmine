@@ -580,6 +580,17 @@ public class MusicService
         return playlistService.canEditPlaylistEntries(guild, member);
     }
 
+    public void addCurrentTrackToPlaylist(Guild guild, Member member, String playlistName,
+                                          OutputAdapter output)
+    {
+        playlistService.addCurrentTrackToPlaylist(guild, member, playlistName, output);
+    }
+
+    public PlaylistMutationResult renamePlaylist(String oldName, String newName)
+    {
+        return playlistService.renamePlaylist(oldName, newName);
+    }
+
     public PlaylistMutationResult appendPlaylistItems(String playlistName, List<String> items)
     {
         return playlistService.appendPlaylistItems(playlistName, items);

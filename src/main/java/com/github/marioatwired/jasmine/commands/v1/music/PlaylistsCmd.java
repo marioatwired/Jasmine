@@ -58,7 +58,8 @@ public class PlaylistsCmd extends MusicCommand
             var member = event.getMember();
             var color = member != null ? member.getColors().getPrimary() : event.getSelfMember().getColors().getPrimary();
 
-            var embed = PlaylistsSlashCmd.buildPlaylistsEmbed(list, page, totalPages, 0, color);
+            var embed = PlaylistsSlashCmd.buildPlaylistsEmbed(list, playlistNamesInfo.itemCounts,
+                    page, totalPages, 0, color);
             var components = PlaylistsSlashCmd.buildPlaylistsComponents(page, totalPages, playlistsOnPage, 0, userId);
             MessageCreateData message = new MessageCreateBuilder()
                     .addEmbeds(embed)

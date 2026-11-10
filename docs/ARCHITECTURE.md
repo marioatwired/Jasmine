@@ -153,8 +153,8 @@ delegates to focused services and owns no service-layer business logic:
 - `PlaylistService`: saved playlist CRUD, playlist queue/play operations, and
   orchestration of favorites/history export. Delegates direct file edits to
   `PlaylistMutationService`.
-- `PlaylistMutationService`: direct append/remove/move/replace edits of saved
-  playlist files, preserving shuffle directives.
+- `PlaylistMutationService`: direct append/remove/move/replace edits and rename
+  operations on saved playlist files, preserving shuffle directives.
 - `FavoritesService`: adds the currently playing track to the favorites playlist.
 - `HistoryPlaylistService`: exports http(s) playback history to a saved playlist.
 - `PlaylistTransferService`: imports playlist text attachments and exports raw

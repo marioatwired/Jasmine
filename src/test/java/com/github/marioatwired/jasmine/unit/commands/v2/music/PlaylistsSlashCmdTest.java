@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -137,6 +138,23 @@ class PlaylistsSlashCmdTest
         String description = embed.getDescription();
         assertTrue(description.contains("⭐ favorites ⭐"));
         assertTrue(description.contains("`night_drive`"));
+    }
+
+    @Test
+    void buildPlaylistsEmbed_includesItemCounts()
+    {
+        MessageEmbed embed = PlaylistsSlashCmd.buildPlaylistsEmbed(
+                List.of("favorites", "night_drive"),
+                Map.of("favorites", 2, "night_drive", 1),
+                1,
+                1,
+                0,
+                null
+        );
+
+        String description = embed.getDescription();
+        assertTrue(description.contains("(2 songs)"));
+        assertTrue(description.contains("(1 song)"));
     }
 
     @Test

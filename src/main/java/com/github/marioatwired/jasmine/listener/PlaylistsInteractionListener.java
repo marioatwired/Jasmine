@@ -35,6 +35,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -449,6 +450,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
             return;
         }
         List<String> playlists = playlistNamesInfo.names;
+        Map<String, Integer> itemCounts = playlistNamesInfo.itemCounts;
         if (playlists.isEmpty())
         {
             event.editMessage("There are no playlists in the Playlists folder!").setEmbeds().setComponents().queue();
@@ -492,26 +494,26 @@ public class PlaylistsInteractionListener extends ListenerAdapter
                 event.reply("That playlist doesn't exist!").setEphemeral(true).queue();
                 return;
             }
-            updatePlaylistsEmbed(event, playlists, page, totalPages, newSelectedIndex, userId);
+            updatePlaylistsEmbed(event, playlists, itemCounts, page, totalPages, newSelectedIndex, userId);
             return;
         }
 
         if (action.equals("prev"))
         {
             int newPage = Math.max(1, page - 1);
-            updatePlaylistsEmbed(event, playlists, newPage, totalPages, 0, userId);
+            updatePlaylistsEmbed(event, playlists, itemCounts, newPage, totalPages, 0, userId);
             return;
         }
         if (action.equals("next"))
         {
             int newPage = Math.min(totalPages, page + 1);
-            updatePlaylistsEmbed(event, playlists, newPage, totalPages, 0, userId);
+            updatePlaylistsEmbed(event, playlists, itemCounts, newPage, totalPages, 0, userId);
             return;
         }
         if (action.equals("refresh"))
         {
             int safePage = Math.min(page, totalPages);
-            updatePlaylistsEmbed(event, playlists, safePage, totalPages, 0, userId);
+            updatePlaylistsEmbed(event, playlists, itemCounts, safePage, totalPages, 0, userId);
             return;
         }
 
@@ -555,13 +557,13 @@ public class PlaylistsInteractionListener extends ListenerAdapter
         if (action.equals("queue"))
         {
             musicService.queuePlaylist(event.getGuild(), event.getMember(), selectedPlaylist, channel, output);
-            updatePlaylistsEmbed(event, playlists, page, totalPages, 0, userId);
+            updatePlaylistsEmbed(event, playlists, itemCounts, page, totalPages, 0, userId);
             return;
         }
         if (action.equals("playnow"))
         {
             musicService.playPlaylistNow(event.getGuild(), event.getMember(), selectedPlaylist, channel, output);
-            updatePlaylistsEmbed(event, playlists, page, totalPages, 0, userId);
+            updatePlaylistsEmbed(event, playlists, itemCounts, page, totalPages, 0, userId);
         }
     }
 
@@ -571,11 +573,12 @@ public class PlaylistsInteractionListener extends ListenerAdapter
     }
 
     private void updatePlaylistsEmbed(ButtonInteractionEvent event, List<String> playlists,
+                                      Map<String, Integer> itemCounts,
                                       int page, int totalPages, int selectedIndex, long userId)
     {
         int playlistsOnPage = PlaylistsSlashCmd.getPlaylistsOnPage(page, playlists.size());
-        MessageEmbed embed = PlaylistsSlashCmd.buildPlaylistsEmbed(playlists, page, totalPages, selectedIndex,
-                event.getMember().getColors().getPrimary());
+        MessageEmbed embed = PlaylistsSlashCmd.buildPlaylistsEmbed(playlists, itemCounts,
+                page, totalPages, selectedIndex, event.getMember().getColors().getPrimary());
         List<ActionRow> components = PlaylistsSlashCmd.buildPlaylistsComponents(page, totalPages, playlistsOnPage, selectedIndex, userId);
         event.editMessageEmbeds(embed).setComponents(components).queue();
     }
@@ -589,6 +592,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
             return;
         }
         List<String> playlists = playlistNamesInfo.names;
+        Map<String, Integer> itemCounts = playlistNamesInfo.itemCounts;
         if (playlists.isEmpty())
         {
             event.editMessage("There are no playlists in the Playlists folder!").setEmbeds().setComponents().queue();
@@ -605,7 +609,7 @@ public class PlaylistsInteractionListener extends ListenerAdapter
         {
             safeSelected = 0;
         }
-        updatePlaylistsEmbed(event, playlists, safePage, totalPages, safeSelected, userId);
+        updatePlaylistsEmbed(event, playlists, itemCounts, safePage, totalPages, safeSelected, userId);
     }
 
     private PlaylistDraftContext buildDraftContext(ButtonInteractionEvent event, long userId, String playlistName)

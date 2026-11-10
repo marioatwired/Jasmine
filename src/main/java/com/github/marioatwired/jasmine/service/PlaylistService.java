@@ -41,7 +41,9 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -96,6 +98,17 @@ public class PlaylistService
         favoritesService.addCurrentTrackToFavorites(guild, member, output);
     }
 
+    public void addCurrentTrackToPlaylist(Guild guild, Member member, String playlistName,
+                                          OutputAdapter output)
+    {
+        favoritesService.addCurrentTrackToPlaylist(guild, member, playlistName, output);
+    }
+
+    public PlaylistMutationResult renamePlaylist(String oldName, String newName)
+    {
+        return playlistMutationService.renamePlaylist(oldName, newName);
+    }
+
     public PlaylistNamesInfo getAvailablePlaylistNames()
     {
         PlaylistLoader.PlaylistResult<List<String>> result = bot.getPlaylistLoader().getPlaylistNamesResult();
@@ -103,7 +116,19 @@ public class PlaylistService
         {
             return PlaylistNamesInfo.error(PlaylistErrorMessages.toMessage(result.getError()));
         }
-        return PlaylistNamesInfo.success(result.getValue());
+
+        List<String> names = result.getValue();
+        Map<String, Integer> itemCounts = new LinkedHashMap<>();
+        for (String name : names)
+        {
+            PlaylistLoader.PlaylistResult<Playlist> playlistResult =
+                    bot.getPlaylistLoader().getPlaylistResult(name);
+            if (playlistResult.isSuccess())
+            {
+                itemCounts.put(name, playlistResult.getValue().getItems().size());
+            }
+        }
+        return PlaylistNamesInfo.success(names, itemCounts);
     }
 
     public void queuePlaylist(Guild guild, Member member, String playlistName, TextChannel channel, OutputAdapter output)
