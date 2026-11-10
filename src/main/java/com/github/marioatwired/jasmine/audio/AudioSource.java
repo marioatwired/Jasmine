@@ -233,6 +233,8 @@ public enum AudioSource
         
         boolean useOauth = config.useYouTubeOauth();
         YoutubeSourceOptions options = buildYoutubeOptions(config);
+        if (useOauth)
+            applyTvUserAgentWorkaround();
         Client[] clients = buildYoutubeClients(useOauth);
 
         YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager(options, clients);
@@ -263,6 +265,20 @@ public enum AudioSource
         return options;
     }
     
+    /**
+     * YouTube currently rejects the Cobalt user-agent used by the TVHTML5
+     * client with "The page needs to be reloaded". A PlayStation 4 identity is
+     * accepted for OAuth playback. Remove this once youtube-source ships the
+     * upstream fix in a release.
+     *
+     * @see <a href="https://github.com/lavalink-devs/youtube-source/issues/226">youtube-source#226</a>
+     */
+    private static void applyTvUserAgentWorkaround()
+    {
+        Tv.BASE_CONFIG = Tv.BASE_CONFIG.copy()
+                .withUserAgent("Mozilla/5.0 (PlayStation; PlayStation 4/12.00)");
+    }
+
     /**
      * Builds the appropriate YouTube clients based on OAuth setting.
      * 

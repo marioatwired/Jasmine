@@ -17,6 +17,7 @@ package com.github.marioatwired.jasmine.unit;
 
 import com.github.marioatwired.jasmine.BotConfig;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
+import dev.lavalink.youtube.clients.Tv;
 import dev.lavalink.youtube.clients.skeleton.Client;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -187,6 +188,17 @@ class AudioSourceOAuthTest {
                     setupMethod.invoke(null, mockConfig);
                 assertNotNull(result, "Should return a configured YoutubeAudioSourceManager");
             }, "setupYoutubeAudioSourceManager should complete without throwing when OAuth is enabled");
+        }
+
+        @Test
+        @DisplayName("TVHTML5 uses a compatible PlayStation user-agent for OAuth playback")
+        void tvClientUsesCompatibleUserAgent() throws Exception {
+            Method workaround = com.github.marioatwired.jasmine.audio.AudioSource.class
+                    .getDeclaredMethod("applyTvUserAgentWorkaround");
+            workaround.setAccessible(true);
+            workaround.invoke(null);
+
+            assertTrue(Tv.BASE_CONFIG.getUserAgent().contains("PlayStation"));
         }
 
         @Test
