@@ -13,7 +13,8 @@ Presentation
                   |
 Business logic
   MusicService (facade)
-    -> PlayerService          playback control, track loading, and track enqueue
+    -> PlayerService          track loading and enqueue
+    -> PlaybackControlService pause, stop, volume, repeat, seek, and skip
     -> QueueService           queue inspection, removal, movement, and shuffle
     -> PlaylistService        saved playlist CRUD, queue/play, and orchestration
     -> FavoritesService       add the current track to Favorites
@@ -53,7 +54,7 @@ that need to add tracks without depending on the whole `MusicService` facade.
 | `listener` | JDA listeners for voice state, now-playing cleanup, playback buttons, queue/history/playlist/settings interactions, and startup lifecycle. |
 | `playlist` | Playlist model, parsing, and file-system storage. |
 | `queue` | `AbstractQueue`, `LinearQueue`, `FairQueue`, `PlaybackHistory`, and queue persistence. |
-| `service` | `MusicService` facade; `PlayerService`, `QueueService`, `PlaylistService`, `FavoritesService`, `HistoryPlaylistService`, `PlaylistTransferService`, `PlaylistDraftService`, `PlaylistPreviewService`, `HistoryService`, `NowPlayingService`; `SearchService`; `OutputAdapter`, `TrackEnqueuer`; audio load result handlers. |
+| `service` | `MusicService` facade; `PlayerService`, `PlaybackControlService`, `QueueService`, `PlaylistService`, `FavoritesService`, `HistoryPlaylistService`, `PlaylistTransferService`, `PlaylistDraftService`, `PlaylistPreviewService`, `HistoryService`, `NowPlayingService`; `SearchService`; `OutputAdapter`, `TrackEnqueuer`; audio load result handlers. |
 | `service.dto` | DTOs shared by the facade, services, commands, listeners, and GUI. |
 | `settings` | Per-guild settings and JSON persistence. |
 | `utils` | Formatting, proxy, YouTube OAuth, console redirection, instance lock. |
@@ -144,8 +145,9 @@ replayed by `/previous` after a restart.
 `MusicService` is a thin facade kept for command/listener compatibility. It
 delegates to focused services and owns no service-layer business logic:
 
-- `PlayerService`: playback control, track loading, enqueueing, volume, repeat,
-  seek, skip, stop, pause, and play-now/skip-to transitions.
+- `PlayerService`: track loading, validation, and enqueueing.
+- `PlaybackControlService`: volume, repeat, seek, skip, stop, pause, previous
+  navigation, and play-now/skip-to transitions.
 - `QueueService`: queue inspection, removal, movement, shuffle, and queue-size
   queries.
 - `PlaylistService`: saved playlist CRUD, playlist queue/play operations, and
@@ -226,8 +228,9 @@ Runtime files are ignored by git.
 
 `MusicServiceTest` exercises the facade and the extracted playback, queue,
 history, playlist, volume, repeat, shuffle, skip, stop, and pause behavior.
-`PlayerServiceTest`, `QueueServiceTest`, `PlaylistDraftServiceTest`, and
-`PlaylistPreviewServiceTest` cover the focused services directly.
+`PlayerServiceTest`, `MusicServiceTest`, `QueueServiceTest`,
+`PlaylistDraftServiceTest`, and `PlaylistPreviewServiceTest` cover the focused
+services directly and through the facade.
 `QueuePersistenceServiceTest` covers queue and history snapshots, restoration,
 malformed state files, and failed track reloads.
 `PlaylistTransferServiceTest` covers import validation, raw export, and playlist
@@ -242,8 +245,8 @@ for the `service` package.
 
 ## Known technical debt
 
-- `PlayerService` is still a large coordinator for playback and track loading;
-  further extraction is possible once its use cases stabilize.
+- `PlaybackControlService` still coordinates several playback and DJ actions;
+  skip/seek handling could be extracted further if those flows grow.
 - `PlaylistsInteractionListener` still owns playlist list/detail button routing;
   it can be split further once the interaction flows stabilize.
 - The v1 and v2 command layers duplicate some presentation logic.

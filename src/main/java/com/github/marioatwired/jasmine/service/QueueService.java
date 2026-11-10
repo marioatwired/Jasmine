@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Queue inspection and mutation operations.
  * <p>
- * Playback control stays in {@link PlayerService}; this service only changes
- * queue contents and reports the result to the caller.
+ * Playback control stays in {@link PlaybackControlService}; this service only
+ * changes queue contents and reports the result to the caller.
  */
 public class QueueService
 {

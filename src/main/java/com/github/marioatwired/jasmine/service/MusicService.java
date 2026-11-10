@@ -41,15 +41,17 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 
 /**
- * Facade for music operations. Playback control lives in {@link PlayerService};
- * queue mutation lives in {@link QueueService}; playlists, history, and
- * now-playing formatting have their own services.
+ * Facade for music operations. Track loading and enqueueing live in
+ * {@link PlayerService}; playback control lives in
+ * {@link PlaybackControlService}; queue mutation lives in {@link QueueService};
+ * playlists, history, and now-playing formatting have their own services.
  */
 public class MusicService
 {
     private static final Logger LOG = LoggerFactory.getLogger(MusicService.class);
 
     private final PlayerService playerService;
+    private final PlaybackControlService playbackControlService;
     private final QueueService queueService;
     private final NowPlayingService nowPlayingService;
     private final HistoryService historyService;
@@ -64,6 +66,7 @@ public class MusicService
     public MusicService(Bot bot, PlayerService playerService)
     {
         this.playerService = playerService;
+        this.playbackControlService = new PlaybackControlService(bot);
         this.queueService = new QueueService(bot);
         this.nowPlayingService = new NowPlayingService(bot);
         this.historyService = new HistoryService(bot, playerService);
@@ -155,7 +158,7 @@ public class MusicService
 
     public void previous(Guild guild, Member member, OutputAdapter output)
     {
-        playerService.previous(guild, member, output);
+        playbackControlService.previous(guild, member, output);
     }
 
     public void shuffle(Guild guild, Member member, int startIndex, OutputAdapter output)
@@ -177,7 +180,7 @@ public class MusicService
 
     public void cycleRepeatMode(Guild guild, Member member, OutputAdapter output)
     {
-        playerService.cycleRepeatMode(guild, member, output);
+        playbackControlService.cycleRepeatMode(guild, member, output);
     }
 
     /**
@@ -188,7 +191,7 @@ public class MusicService
      */
     public RepeatMode getRepeatMode(Guild guild)
     {
-        return playerService.getRepeatMode(guild);
+        return playbackControlService.getRepeatMode(guild);
     }
 
     /**
@@ -199,12 +202,12 @@ public class MusicService
      */
     public void setRepeatMode(Guild guild, RepeatMode mode)
     {
-        playerService.setRepeatMode(guild, mode);
+        playbackControlService.setRepeatMode(guild, mode);
     }
 
     public void adjustVolume(Guild guild, Member member, int change, OutputAdapter output)
     {
-        playerService.adjustVolume(guild, member, change, output);
+        playbackControlService.adjustVolume(guild, member, change, output);
     }
 
     /**
@@ -215,7 +218,7 @@ public class MusicService
      */
     public int getVolume(Guild guild)
     {
-        return playerService.getVolume(guild);
+        return playbackControlService.getVolume(guild);
     }
 
     /**
@@ -227,12 +230,12 @@ public class MusicService
      */
     public VolumeResult setVolume(Guild guild, int volume)
     {
-        return playerService.setVolume(guild, volume);
+        return playbackControlService.setVolume(guild, volume);
     }
 
     public void stop(Guild guild, Member member, OutputAdapter output)
     {
-        playerService.stop(guild, member, output);
+        playbackControlService.stop(guild, member, output);
     }
 
     /**
@@ -243,12 +246,12 @@ public class MusicService
      */
     public void stopAndClear(Guild guild)
     {
-        playerService.stopAndClear(guild);
+        playbackControlService.stopAndClear(guild);
     }
 
     public void pause(Guild guild, Member member, OutputAdapter output)
     {
-        playerService.pause(guild, member, output);
+        playbackControlService.pause(guild, member, output);
     }
 
     /**
@@ -259,7 +262,7 @@ public class MusicService
      */
     public boolean isPaused(Guild guild)
     {
-        return playerService.isPaused(guild);
+        return playbackControlService.isPaused(guild);
     }
 
     /**
@@ -271,12 +274,12 @@ public class MusicService
      */
     public String setPaused(Guild guild, boolean paused)
     {
-        return playerService.setPaused(guild, paused);
+        return playbackControlService.setPaused(guild, paused);
     }
 
     public void skip(Guild guild, Member member, OutputAdapter output)
     {
-        playerService.skip(guild, member, output);
+        playbackControlService.skip(guild, member, output);
     }
 
     /**
@@ -288,12 +291,12 @@ public class MusicService
      */
     public ForceSkipResult forceSkip(Guild guild)
     {
-        return playerService.forceSkip(guild);
+        return playbackControlService.forceSkip(guild);
     }
 
     public void skipWithVote(Guild guild, Member member, int listeners, OutputAdapter output)
     {
-        playerService.skipWithVote(guild, member, listeners, output);
+        playbackControlService.skipWithVote(guild, member, listeners, output);
     }
 
     public void addCurrentTrackToFavorites(Guild guild, Member member, OutputAdapter output)
@@ -303,7 +306,7 @@ public class MusicService
 
     public void seek(Guild guild, Member member, String timeString, OutputAdapter output)
     {
-        playerService.seek(guild, member, timeString, output);
+        playbackControlService.seek(guild, member, timeString, output);
     }
 
     // ========== Queue Operations ==========
@@ -371,7 +374,7 @@ public class MusicService
      */
     public void playNow(Guild guild, Member member, int position, OutputAdapter output)
     {
-        playerService.playNow(guild, member, position, output);
+        playbackControlService.playNow(guild, member, position, output);
     }
 
     /**
@@ -402,7 +405,7 @@ public class MusicService
 
     public void skipTo(Guild guild, Member member, int position, OutputAdapter output)
     {
-        playerService.skipTo(guild, member, position, output);
+        playbackControlService.skipTo(guild, member, position, output);
     }
 
     /**
@@ -415,7 +418,7 @@ public class MusicService
      */
     public String skipToPosition(Guild guild, int position)
     {
-        return playerService.skipToPosition(guild, position);
+        return playbackControlService.skipToPosition(guild, position);
     }
 
     /**
