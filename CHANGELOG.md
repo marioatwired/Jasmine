@@ -5,7 +5,12 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.0] - 2026-11-10
+
+### Added
+
+- Added the `/playlist` slash command group with `view`, `append`, `remove`,
+  `move`, and `replace` subcommands for parity with the text commands.
 
 ### Changed
 
@@ -19,8 +24,6 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
-- Added the `/playlist` slash command group with `view`, `append`, `remove`,
-  `move`, and `replace` subcommands for parity with the text commands.
 - Docker credentials can be supplied with `JASMINE_TOKEN` / `JASMINE_OWNER`, or
   with `JASMINE_TOKEN_FILE` / `JASMINE_OWNER_FILE` for Docker secrets. The
   `DISCORD_TOKEN` and `DISCORD_OWNER` aliases are also supported.
