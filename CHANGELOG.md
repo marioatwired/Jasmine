@@ -5,6 +5,16 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- The `about` command no longer displays the unresolved JDA-Chewtils version
+  placeholder.
+- Config migrations can now replace read-only `config.txt` files, including
+  files created by Docker bind mounts.
+- Custom command aliases are no longer reported as deprecated/unknown keys.
+
 ## [0.6.0] - 2026-11-09
 
 ### Added

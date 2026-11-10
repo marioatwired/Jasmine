@@ -2,7 +2,6 @@ package com.github.marioatwired.jasmine.commands.v1;
 
 import com.jagrosh.jdautilities.command.CommandClient;
 import com.jagrosh.jdautilities.command.CommandClientBuilder;
-import com.jagrosh.jdautilities.examples.command.AboutCommand;
 import com.jagrosh.jdautilities.examples.command.PingCommand;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.BotConfig;
@@ -43,7 +42,6 @@ import com.github.marioatwired.jasmine.commands.v2.music.SeekSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.music.ShuffleSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.music.SkipSlashCmd;
 import com.github.marioatwired.jasmine.settings.SettingsManager;
-import com.github.marioatwired.jasmine.utils.OtherUtil;
 import net.dv8tion.jda.api.OnlineStatus;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,7 +50,7 @@ import java.awt.*;
 public class CommandFactory {
 
     public static CommandClient createCommandClient(BotConfig config, SettingsManager settings, Bot bot) {
-        AboutCommand aboutCommand = createAboutCommand();
+        AboutCmd aboutCommand = createAboutCommand();
 
         CommandClientBuilder cb = new CommandClientBuilder()
             .setPrefix(config.getPrefix())
@@ -160,13 +158,10 @@ public class CommandFactory {
         return cb.build();
     }
 
-    private static @NotNull AboutCommand createAboutCommand() {
-        AboutCommand aboutCommand = new AboutCommand(Color.BLUE.brighter(),
-                "a music bot that is [easy to host yourself!](https://github.com/marioatwired/Jasmine) (v" + OtherUtil.getCurrentVersion() + ")",
+    private static @NotNull AboutCmd createAboutCommand() {
+        return new AboutCmd(Color.BLUE.brighter(),
+                "a music bot that is [easy to host yourself!](https://github.com/marioatwired/Jasmine)",
                 new String[]{"High-quality music playback", "FairQueue™ Technology", "Easy to host yourself"},
                 Jasmine.RECOMMENDED_PERMS);
-        aboutCommand.setIsAuthor(false);
-        aboutCommand.setReplacementCharacter("\uD83C\uDFB6");
-        return aboutCommand;
     }
 }

@@ -51,10 +51,22 @@ public class ConfigUpdater {
     public static Path generateUpdatedConfig(Path userConfigPath, Config migratedUserConfig, 
                                              ConfigDiagnostics.Report diagnostics,
                                              ConfigUpdateType updateType) {
+        // Normalize to absolute path
+        Path normalizedPath = userConfigPath.toAbsolutePath().normalize();
+
+        // Generate HOCON content using ConfigDocument to preserve template style.
+        // Do this before creating a backup so render failures do not leave
+        // unnecessary .bak files behind.
+        String content;
         try {
-            // Normalize to absolute path
-            Path normalizedPath = userConfigPath.toAbsolutePath().normalize();
-            
+            content = ConfigRenderer.generateConfigContent(migratedUserConfig, diagnostics, updateType);
+        } catch (RuntimeException e) {
+            LOGGER.error("Failed to generate updated config for {}: {}",
+                    normalizedPath, e.getMessage(), e);
+            return null;
+        }
+
+        try {
             // Backup the original config file if it exists
             if (normalizedPath.toFile().exists()) {
                 Path backupPath = findAvailableBackupPath(normalizedPath);
@@ -62,16 +74,15 @@ public class ConfigUpdater {
                 LOGGER.info("Backed up original config to: {}", backupPath);
             }
             
-            // Generate HOCON content using ConfigDocument to preserve template style
-            String content = ConfigRenderer.generateConfigContent(migratedUserConfig, diagnostics, updateType);
-            
             // Write the migrated config to the original location
             ConfigIO.writeConfigFile(normalizedPath, content);
             
             LOGGER.info("Updated config file: {}", normalizedPath);
             return normalizedPath;
         } catch (IOException e) {
-            LOGGER.error("Failed to update config file: {}", e.getMessage());
+            LOGGER.error("Failed to update config file: {}. The existing config was left unchanged. "
+                            + "Check that the file and its parent directory are writable. Cause: {}",
+                    normalizedPath, e.toString());
             return null;
         }
     }

@@ -121,6 +121,7 @@ docker compose up -d
 | Slash commands are missing | Reinvite the bot with the `applications.commands` scope and restart it. |
 | YouTube asks for sign-in | Enable `playback.youtube.useOAuth` and follow the device flow. |
 | Audio stutters | Increase `performance.nasBufferMs` or `performance.frameBufferMs`. |
+| Config migration fails | Ensure `config.txt` and its parent directory are writable by the bot user (UID 10001 in Docker). |
 
 ## Updating
 

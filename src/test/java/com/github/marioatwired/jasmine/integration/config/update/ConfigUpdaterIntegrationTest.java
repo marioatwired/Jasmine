@@ -27,6 +27,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.parser.ConfigDocument;
 import com.typesafe.config.parser.ConfigDocumentFactory;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -105,6 +107,33 @@ class ConfigUpdaterIntegrationTest extends BaseConfigTest {
             assertTrue(content.contains("commands {") || content.contains("commands"));
         }
         
+        @Test
+        @DisplayName("generateUpdatedConfig replaces a read-only config file")
+        void generateUpdatedConfigReplacesReadOnlyConfig() throws IOException {
+            Path configFile = createTempConfigFile(LegacyConfigBuilder.create()
+                    .withToken("test_token")
+                    .withOwner(123456789L)
+                    .buildAsString());
+            try {
+                Files.setPosixFilePermissions(configFile,
+                        PosixFilePermissions.fromString("r--r--r--"));
+            } catch (UnsupportedOperationException e) {
+                Assumptions.assumeTrue(false, "POSIX permissions are not supported");
+            }
+
+            Config merged = ConfigLoader.loadMergedConfig(configFile);
+            Config migratedUser = ConfigLoader.loadMigratedUserConfig(configFile);
+            Config defaults = ConfigFactory.load();
+            ConfigDiagnostics.Report diagnostics = ConfigDiagnostics.analyze(migratedUser, merged, defaults);
+
+            Path updatedPath = ConfigUpdater.generateUpdatedConfig(
+                    configFile, migratedUser, diagnostics, ConfigUpdateType.MIGRATION);
+
+            assertNotNull(updatedPath);
+            Config generated = ConfigFactory.parseString(readFileContent(configFile));
+            assertTrue(generated.hasPath("meta.configVersion"));
+        }
+
         @Test
         @DisplayName("generateUpdatedConfig creates backup file")
         void generateUpdatedConfigCreatesBackup() throws IOException {
