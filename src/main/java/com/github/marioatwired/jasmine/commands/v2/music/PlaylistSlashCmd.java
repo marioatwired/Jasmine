@@ -20,6 +20,7 @@ import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
 import com.github.marioatwired.jasmine.service.dto.PlaylistMutationResult;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
@@ -38,7 +39,7 @@ public class PlaylistSlashCmd extends SlashCommand
         this.bot = bot;
         this.name = "playlist";
         this.help = "view and edit saved playlists";
-        this.guildOnly = true;
+        this.contexts = new InteractionContextType[]{InteractionContextType.GUILD};
         this.category = new Category("Playlist");
         this.children = new SlashCommand[]{
             new ViewCmd(),
@@ -62,7 +63,7 @@ public class PlaylistSlashCmd extends SlashCommand
     {
         protected EditorCommand()
         {
-            this.guildOnly = true;
+            this.contexts = new InteractionContextType[]{InteractionContextType.GUILD};
             this.category = new Category("Playlist");
         }
 
@@ -104,7 +105,7 @@ public class PlaylistSlashCmd extends SlashCommand
         {
             this.name = "view";
             this.help = "view and edit a saved playlist";
-            this.guildOnly = true;
+            this.contexts = new InteractionContextType[]{InteractionContextType.GUILD};
             this.category = new Category("Playlist");
             this.options = List.of(
                     new OptionData(OptionType.STRING, "name", "the playlist name", true),
