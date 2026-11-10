@@ -5,6 +5,14 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Split playback control, DJ actions, and history navigation out of
+  `PlayerService` into `PlaybackControlService`. `PlayerService` now focuses on
+  track loading, validation, and enqueueing.
+
 ## [0.6.1] - 2026-11-10
 
 ### Fixed
