@@ -13,6 +13,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `PlayerService` into `PlaybackControlService`. `PlayerService` now focuses on
   track loading, validation, and enqueueing.
 
+### Fixed
+
+- Multi-architecture Docker builds no longer try to resolve unused JavaFX
+  artifacts pulled in by FlatLaf Extras.
+
 ## [0.6.1] - 2026-11-10
 
 ### Fixed
