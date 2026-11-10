@@ -19,6 +19,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added the `/playlist` slash command group with `view`, `append`, `remove`,
+  `move`, and `replace` subcommands for parity with the text commands.
 - Docker credentials can be supplied with `JASMINE_TOKEN` / `JASMINE_OWNER`, or
   with `JASMINE_TOKEN_FILE` / `JASMINE_OWNER_FILE` for Docker secrets. The
   `DISCORD_TOKEN` and `DISCORD_OWNER` aliases are also supported.

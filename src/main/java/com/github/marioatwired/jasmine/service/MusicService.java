@@ -22,6 +22,7 @@ import com.github.marioatwired.jasmine.service.dto.NowPlayingInfo;
 import com.github.marioatwired.jasmine.service.dto.PlaylistDetailsInfo;
 import com.github.marioatwired.jasmine.service.dto.PlaylistDraftContext;
 import com.github.marioatwired.jasmine.service.dto.PlaylistDraftMutationResult;
+import com.github.marioatwired.jasmine.service.dto.PlaylistMutationResult;
 import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
 import com.github.marioatwired.jasmine.service.dto.PlaylistPreviewWithTracks;
 import com.github.marioatwired.jasmine.service.dto.PlaylistTracksPageInfo;
@@ -38,6 +39,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -576,6 +578,26 @@ public class MusicService
     public boolean canEditPlaylistEntries(Guild guild, Member member)
     {
         return playlistService.canEditPlaylistEntries(guild, member);
+    }
+
+    public PlaylistMutationResult appendPlaylistItems(String playlistName, List<String> items)
+    {
+        return playlistService.appendPlaylistItems(playlistName, items);
+    }
+
+    public PlaylistMutationResult removePlaylistItem(String playlistName, int position)
+    {
+        return playlistService.removePlaylistItem(playlistName, position);
+    }
+
+    public PlaylistMutationResult movePlaylistItem(String playlistName, int fromPosition, int toPosition)
+    {
+        return playlistService.movePlaylistItem(playlistName, fromPosition, toPosition);
+    }
+
+    public PlaylistMutationResult replacePlaylistItem(String playlistName, int position, String item)
+    {
+        return playlistService.replacePlaylistItem(playlistName, position, item);
     }
 
     public PlaylistDraftContext buildPlaylistDraftContext(long guildId, long channelId, long messageId,
