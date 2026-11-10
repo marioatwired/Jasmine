@@ -18,16 +18,12 @@ package com.github.marioatwired.jasmine.config.io;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.Set;
 
 import com.github.marioatwired.jasmine.Jasmine;
+import com.github.marioatwired.jasmine.utils.FileWriteUtil;
 import com.github.marioatwired.jasmine.utils.OtherUtil;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -66,46 +62,7 @@ public class ConfigIO {
      * writable for this fallback.
      */
     public static void writeConfigFile(Path path, String content) throws IOException {
-        byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        try {
-            Files.write(path, bytes);
-        } catch (AccessDeniedException ex) {
-            replaceFile(path, bytes);
-        }
-    }
-
-    private static void replaceFile(Path path, byte[] bytes) throws IOException {
-        Path target = path.toAbsolutePath().normalize();
-        Path parent = target.getParent();
-        if (parent == null) {
-            throw new IOException("Config file has no parent directory: " + target);
-        }
-
-        Path temporary = Files.createTempFile(parent, target.getFileName().toString(), ".tmp");
-        try {
-            Files.write(temporary, bytes);
-            copyPosixPermissions(target, temporary);
-            try {
-                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException ex) {
-                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
-            }
-        } finally {
-            Files.deleteIfExists(temporary);
-        }
-    }
-
-    private static void copyPosixPermissions(Path source, Path target) {
-        try {
-            if (!Files.exists(source)) {
-                return;
-            }
-            Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(source);
-            Files.setPosixFilePermissions(target, permissions);
-        } catch (IOException | UnsupportedOperationException ignored) {
-            // POSIX permissions are not available on every platform/filesystem.
-        }
+        FileWriteUtil.write(path, content.getBytes(StandardCharsets.UTF_8));
     }
     
     /**

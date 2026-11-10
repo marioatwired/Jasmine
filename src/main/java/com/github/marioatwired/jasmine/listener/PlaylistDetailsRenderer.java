@@ -103,12 +103,12 @@ class PlaylistDetailsRenderer
                     int safeSelected = (selectedTrack >= firstOnPage && selectedTrack <= lastOnPage) ? selectedTrack : 0;
 
                     Color color = member != null ? member.getColors().getPrimary() : null;
-                    MessageEmbed embed = PlaylistsSlashCmd.buildPlaylistTracksEmbed(
-                            result.playlistName, result.totalItems, safePage, totalPages, result.formattedLines,
-                            safeSelected, result.dirty, color);
                     boolean canEdit = guild != null
                             && member != null
                             && musicService.canEditPlaylistEntries(guild, member);
+                    MessageEmbed embed = PlaylistsSlashCmd.buildPlaylistTracksEmbed(
+                            result.playlistName, result.totalItems, safePage, totalPages, result.formattedLines,
+                            safeSelected, canEdit, result.dirty, color);
                     List<ActionRow> components = PlaylistsSlashCmd.buildPlaylistDetailsComponents(
                             playlistIndex, listPage, safePage, totalPages, tracksOnPage, safeSelected, userId,
                             canEdit, result.dirty);
@@ -142,6 +142,8 @@ class PlaylistDetailsRenderer
                             totalPages,
                             result.formattedLines,
                             safeSelected,
+                            event.getGuild() != null && event.getMember() != null
+                                    && musicService.canEditPlaylistEntries(event.getGuild(), event.getMember()),
                             result.dirty,
                             event.getMember() != null ? event.getMember().getColors().getPrimary() : null
                     );

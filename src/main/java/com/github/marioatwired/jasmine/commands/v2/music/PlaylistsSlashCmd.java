@@ -181,7 +181,7 @@ public class PlaylistsSlashCmd extends MusicSlashCommand
     public static MessageEmbed buildPlaylistTracksEmbed(String playlistName, int totalItems,
                                                         int page, int totalPages,
                                                         List<String> formattedTrackLines,
-                                                        int selectedTrack, boolean draftDirty,
+                                                        int selectedTrack, boolean canEdit, boolean draftDirty,
                                                         Color memberColor)
     {
         int startIndex = (page - 1) * PLAYLIST_TRACKS_PER_PAGE;
@@ -200,6 +200,10 @@ public class PlaylistsSlashCmd extends MusicSlashCommand
         if (draftDirty)
         {
             footer += " • Unsaved changes";
+        }
+        else if (canEdit)
+        {
+            footer += " • Select a track to edit";
         }
         PaginatedListEmbedUtil.applyStandardEmbedOptions(embed, footer, memberColor);
         return embed.build();
@@ -265,7 +269,7 @@ public class PlaylistsSlashCmd extends MusicSlashCommand
         {
             Button queueBtn = Button.secondary(String.format(baseId, "queue"), "Queue").withEmoji(Emoji.fromUnicode("➕"));
             Button playNowBtn = Button.success(String.format(baseId, "playnow"), "Play Now").withEmoji(Emoji.fromUnicode("▶️"));
-            Button detailsBtn = Button.primary(String.format(baseId, "details"), "Details").withEmoji(Emoji.fromUnicode("ℹ️"));
+            Button detailsBtn = Button.primary(String.format(baseId, "details"), "View / Edit").withEmoji(Emoji.fromUnicode("ℹ️"));
             rows.add(ActionRow.of(queueBtn, playNowBtn, detailsBtn, refreshBtn));
         }
         else

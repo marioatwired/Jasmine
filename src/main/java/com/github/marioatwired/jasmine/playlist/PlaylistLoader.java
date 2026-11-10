@@ -276,13 +276,7 @@ public class PlaylistLoader
         }
 
         ParsedPlaylist parsed = PlaylistParser.parse(readResult.getValue(), true);
-        List<String> list = parsed.items();
-        boolean shuffle = parsed.shuffle();
-        if (shuffle)
-        {
-            PlaylistParser.shuffle(list);
-        }
-        return PlaylistResult.success(new Playlist(name, list, shuffle));
+        return PlaylistResult.success(new Playlist(name, parsed.items(), parsed.shuffle()));
     }
 
 
@@ -405,6 +399,11 @@ public class PlaylistLoader
         public List<String> getItems()
         {
             return items;
+        }
+
+        public boolean isShuffle()
+        {
+            return shuffle;
         }
 
         public List<AudioTrack> getTracks()

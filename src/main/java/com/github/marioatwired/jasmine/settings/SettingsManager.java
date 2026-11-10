@@ -20,14 +20,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jagrosh.jdautilities.command.GuildSettingsManager;
+import com.github.marioatwired.jasmine.utils.FileWriteUtil;
 import com.github.marioatwired.jasmine.utils.OtherUtil;
 import net.dv8tion.jda.api.entities.Guild;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,15 +42,25 @@ public class SettingsManager implements GuildSettingsManager<Settings>
 {
     private final static Logger LOG = LoggerFactory.getLogger(SettingsManager.class);
     private final static String SETTINGS_FILE = "serversettings.json";
+    private final static String WRITE_HINT =
+            "Ensure the config directory is writable by the bot user (UID 10001 in Docker).";
     private final HashMap<Long,Settings> settings;
+    private final Path settingsPath;
     private final static ObjectMapper objectMapper = new ObjectMapper();
 
     public SettingsManager()
     {
+        this(OtherUtil.getPath(SETTINGS_FILE).toAbsolutePath());
+    }
+
+    SettingsManager(Path settingsPath)
+    {
         this.settings = new HashMap<>();
+        this.settingsPath = settingsPath;
 
         try {
-            String jsonContent = new String(Files.readAllBytes(OtherUtil.getPath(SETTINGS_FILE)));
+            String jsonContent = new String(Files.readAllBytes(settingsPath),
+                    StandardCharsets.UTF_8);
             JsonNode loadedSettings = objectMapper.readTree(jsonContent);
             
             if (loadedSettings != null && loadedSettings.isObject()) {
@@ -81,18 +94,20 @@ public class SettingsManager implements GuildSettingsManager<Settings>
         } catch (NoSuchFileException e) {
             // create an empty json file
             try {
-                LOG.info("serversettings.json will be created in " + OtherUtil.getPath("serversettings.json").toAbsolutePath());
+                LOG.info("serversettings.json will be created in " + settingsPath);
                 ObjectNode emptyJson = JsonNodeFactory.instance.objectNode();
-                Files.write(OtherUtil.getPath("serversettings.json"), objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(emptyJson));
+                FileWriteUtil.write(settingsPath,
+                        objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(emptyJson));
             } catch(IOException ex) {
-                LOG.warn("Failed to create new settings file: "+ex);
+                LOG.warn("Failed to create new settings file {}: {}. {}",
+                        settingsPath, ex.toString(), WRITE_HINT);
             }
             return;
         } catch(IOException e) {
             LOG.warn("Failed to load server settings: "+e);
         }
 
-        LOG.info("serversettings.json loaded from " + OtherUtil.getPath("serversettings.json").toAbsolutePath());
+        LOG.info("serversettings.json loaded from " + settingsPath);
     }
 
     /**
@@ -150,9 +165,10 @@ public class SettingsManager implements GuildSettingsManager<Settings>
         });
         try {
             // Use Jackson with pretty printing (indentation)
-            Files.write(OtherUtil.getPath(SETTINGS_FILE), objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(obj));
+            FileWriteUtil.write(settingsPath,
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(obj));
         } catch(IOException ex){
-            LOG.warn("Failed to write to file: "+ex);
+            LOG.warn("Failed to write {}: {}. {}", settingsPath, ex.toString(), WRITE_HINT);
         }
     }
 }

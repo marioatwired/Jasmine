@@ -121,4 +121,25 @@ class PlaylistDraftServiceTest extends TestBase
         assertFalse(result.success);
         assertEquals("Position must be between 1 and 3.", result.errorMessage);
     }
+
+    @Test
+    void savePreservesShuffleDirective()
+    {
+        PlaylistLoader.Playlist shuffled = mock(PlaylistLoader.Playlist.class);
+        when(shuffled.getItems()).thenReturn(new ArrayList<>(List.of("a", "b", "c")));
+        when(shuffled.isShuffle()).thenReturn(true);
+        when(playlistLoader.getPlaylistResult("shuffled"))
+                .thenReturn(PlaylistLoader.PlaylistResult.success(shuffled));
+        when(playlistLoader.writePlaylistResult(eq("shuffled"), anyString()))
+                .thenReturn(PlaylistLoader.PlaylistResult.success(null));
+
+        PlaylistDraftContext shuffledContext =
+                draftService.buildPlaylistDraftContext(GUILD_ID, 1L, 2L, OWNER_ID, "shuffled");
+        draftService.movePlaylistDraftItem(shuffledContext, 1, 3);
+        PlaylistDraftMutationResult result = draftService.savePlaylistDraft(shuffledContext);
+
+        assertTrue(result.success);
+        verify(playlistLoader).writePlaylistResult("shuffled", "#shuffle" + System.lineSeparator()
+                + "b" + System.lineSeparator() + "c" + System.lineSeparator() + "a");
+    }
 }
