@@ -7,8 +7,15 @@ services:
     # or uncomment the user line below to run as your host user.
     # user: "${UID:-10001}:${GID:-10001}"
     environment:
+      # Credentials can be provided here instead of editing config.txt:
+      # JASMINE_TOKEN: "YOUR_BOT_TOKEN"
+      # JASMINE_OWNER: "123456789012345678"
+      # Or load them from Docker secrets:
+      # JASMINE_TOKEN_FILE: /run/secrets/discord_token
+      # JASMINE_OWNER_FILE: /run/secrets/discord_owner
+      #
       # JVM options. Image defaults to ZGC + AlwaysPreTouch; set JAVA_OPTS for heap or other flags:
-      # - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseZGC -XX:+AlwaysPreTouch
+      # JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseZGC -XX:+AlwaysPreTouch"
       {}
     volumes:
       # Mount your config directory. Ensure UID 10001 has read/write access:

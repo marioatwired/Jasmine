@@ -31,6 +31,7 @@ import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 
 import com.github.marioatwired.jasmine.audio.AudioSource;
+import com.github.marioatwired.jasmine.config.EnvironmentConfig;
 import com.github.marioatwired.jasmine.config.diagnostics.ConfigDiagnostics;
 import com.github.marioatwired.jasmine.config.io.ConfigIO;
 import com.github.marioatwired.jasmine.config.loader.ConfigLoader;
@@ -84,14 +85,18 @@ public class BotConfig {
 
         try {
             path = ConfigIO.getConfigPath();
+            EnvironmentConfig.Credentials environmentCredentials =
+                    EnvironmentConfig.from(System.getenv());
 
             // First run: create a template instead of dropping straight into the
             // token prompt. This is especially important in containers, where
             // stdin is not interactive and the prompt would immediately fail.
             if (!ConfigIO.configFileExists(path)) {
                 LOGGER.info("Config file not found at {}; generating a default config.", path.toAbsolutePath());
-                writeDefaultConfig(userInteraction);
-                return;
+                boolean created = writeDefaultConfig(userInteraction);
+                if (!created || !environmentCredentials.isComplete()) {
+                    return;
+                }
             }
 
             // Load and migrate config
@@ -102,6 +107,7 @@ public class BotConfig {
             
             // Load all config values
             loadConfigValues(updatedResult.mergedConfig, updatedResult.migratedUserConfig);
+            applyEnvironmentOverrides(environmentCredentials);
 
             // Validate required fields and write if needed
             if (!validateRequiredFields()) {
@@ -198,6 +204,20 @@ public class BotConfig {
                 updateType.getPastTenseVerb(), updatedConfigPath);
     }
     
+    private void applyEnvironmentOverrides(EnvironmentConfig.Credentials credentials)
+    {
+        if (credentials.token() != null)
+        {
+            token = credentials.token();
+            LOGGER.info("Using Discord token from environment.");
+        }
+        if (credentials.owner() != null)
+        {
+            owner = credentials.owner();
+            LOGGER.info("Using Discord owner ID from environment.");
+        }
+    }
+
     /**
      * Validates token and owner, prompting user if needed. Returns false if validation fails.
      */
@@ -380,7 +400,7 @@ public class BotConfig {
      * 
      * @param userInteraction The user interaction handler for displaying progress and errors
      */
-    public static void writeDefaultConfig(UserInteraction userInteraction) {
+    public static boolean writeDefaultConfig(UserInteraction userInteraction) {
         userInteraction.alert(Level.INFO, "Jasmine Config", "Generating default config file");
         Path path = ConfigIO.getConfigPath();
         try {
@@ -388,11 +408,14 @@ public class BotConfig {
                     "Writing default config file to " + path.toAbsolutePath().toString());
             ConfigIO.writeConfigFile(path, ConfigIO.loadDefaultConfig());
             userInteraction.alert(Level.INFO, "Jasmine Config",
-                    "Default config created. Edit `discord.token` and `discord.owner`, then restart Jasmine.");
+                    "Default config created. Edit `discord.token` and `discord.owner`, "
+                    + "or set JASMINE_TOKEN and JASMINE_OWNER, then restart Jasmine.");
+            return true;
         } catch (Exception ex) {
             userInteraction.alert(Level.ERROR, "Jasmine Config",
                     "An error occurred writing the default config file: " + ex.getMessage()
                     + "\nConfig Location: " + path.toAbsolutePath());
+            return false;
         }
     }
 
