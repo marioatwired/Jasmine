@@ -66,6 +66,10 @@ class BotConfigIntegrationTest extends BaseConfigTest {
                 playback.maxTrackSeconds = 3600
                 playback.maxYouTubePlaylistPages = 20
                 playback.youtube.useOAuth = true
+                playback.youtube.fallbackClients = false
+                playback.youtube.remoteCipherUrl = "https://cipher.example/"
+                playback.youtube.remoteCipherPassword = "secret"
+                playback.youtube.remoteCipherUserAgent = "jasmine-test"
                 voice.aloneTimeUntilStopSeconds = 300
                 paths.playlistsFolder = CustomPlaylists
                 updates.alerts = false
@@ -97,6 +101,11 @@ class BotConfigIntegrationTest extends BaseConfigTest {
             assertEquals("??", config.getAltPrefix());
             assertTrue(config.getSongInStatus());
             assertEquals(20, config.getMaxYTPlaylistPages());
+            assertTrue(config.useYouTubeOauth());
+            assertFalse(config.useYouTubeFallbackClients());
+            assertEquals("https://cipher.example/", config.getYouTubeRemoteCipherUrl());
+            assertEquals("secret", config.getYouTubeRemoteCipherPassword());
+            assertEquals("jasmine-test", config.getYouTubeRemoteCipherUserAgent());
         }
         
         @Test

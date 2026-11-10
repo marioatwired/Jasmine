@@ -5,6 +5,18 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- YouTube OAuth playback now adds secondary playback clients after the TV
+  clients, so Web, MWeb, and AndroidVR can recover playback when TV clients
+  cannot load stream formats.
+- Added `playback.youtube.fallbackClients` to disable the secondary clients.
+- Made the remote cipher URL, password, and user agent configurable through
+  `playback.youtube.remoteCipherUrl`, `remoteCipherPassword`, and
+  `remoteCipherUserAgent`. A blank URL uses the local cipher.
+
 ## [0.9.0] - 2026-11-10
 
 ### Added

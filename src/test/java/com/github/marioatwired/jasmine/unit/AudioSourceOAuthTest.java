@@ -17,6 +17,7 @@ package com.github.marioatwired.jasmine.unit;
 
 import com.github.marioatwired.jasmine.BotConfig;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
+import dev.lavalink.youtube.YoutubeSourceOptions;
 import dev.lavalink.youtube.clients.Tv;
 import dev.lavalink.youtube.clients.skeleton.Client;
 import org.junit.jupiter.api.DisplayName;
@@ -227,7 +228,11 @@ class AudioSourceOAuthTest {
         private BotConfig createMockConfig(boolean useOauth, int maxYTPlaylistPages) {
             BotConfig config = mock(BotConfig.class);
             when(config.useYouTubeOauth()).thenReturn(useOauth);
+            when(config.useYouTubeFallbackClients()).thenReturn(true);
             when(config.getMaxYTPlaylistPages()).thenReturn(maxYTPlaylistPages);
+            when(config.getYouTubeRemoteCipherUrl()).thenReturn("https://cipher.kikkia.dev/");
+            when(config.getYouTubeRemoteCipherPassword()).thenReturn("");
+            when(config.getYouTubeRemoteCipherUserAgent()).thenReturn("jasmine");
             return config;
         }
     }
@@ -237,33 +242,55 @@ class AudioSourceOAuthTest {
     class OAuthConfigurationTests {
 
         @Test
-        @DisplayName("YouTube clients are configured correctly for OAuth mode")
+        @DisplayName("YouTube clients prefer OAuth TV playback and include fallbacks")
         void youtubeClientsConfiguredForOAuthMode() throws Exception {
             Method buildClients = getBuildYoutubeClientsMethod();
             
-            // With OAuth enabled
-            Object[] oauthClients = (Object[]) buildClients.invoke(null, true);
+            Object[] oauthClients = (Object[]) buildClients.invoke(null, true, true);
             assertNotNull(oauthClients, "Should return clients for OAuth mode");
-            assertEquals(5, oauthClients.length, "OAuth mode should use 5 clients");
+            assertEquals(8, oauthClients.length, "OAuth mode should use 8 clients with fallbacks");
             
-            // Verify client types
-            assertEquals("AndroidVrWithThumbnail", oauthClients[0].getClass().getSimpleName(),
-                "First OAuth client should be <AndroidVrWithThumbnail>");
-            assertEquals("MWebWithThumbnail", oauthClients[1].getClass().getSimpleName(),
-                "Second OAuth client should be <MWebWithThumbnail>");
-            assertEquals("WebWithThumbnail", oauthClients[2].getClass().getSimpleName(),
-                "Third OAuth client should be <WebWithThumbnail>");
-            assertEquals("Tv", oauthClients[3].getClass().getSimpleName(),
-                "Fourth OAuth client should be Tv");
-            assertEquals("TvHtml5SimplyWithThumbnail", oauthClients[4].getClass().getSimpleName(),
-                "Fifth OAuth client should be TvHtml5SimplyWithThumbnail");
-            // Verify first 3 clients have playback disabled (metadataOnly)
+            String[] expectedTypes = {
+                    "AndroidVrWithThumbnail",
+                    "MWebWithThumbnail",
+                    "WebWithThumbnail",
+                    "Tv",
+                    "TvHtml5SimplyWithThumbnail",
+                    "AndroidVrWithThumbnail",
+                    "MWebWithThumbnail",
+                    "WebWithThumbnail"
+            };
+            for (int i = 0; i < expectedTypes.length; i++) {
+                assertEquals(expectedTypes[i], oauthClients[i].getClass().getSimpleName(),
+                        "Unexpected OAuth client at index " + i);
+            }
+
+            // The first three clients only load metadata. Playback starts with TV.
             for (int i = 0; i < 3; i++) {
                 Client client = (Client) oauthClients[i];
-                assertFalse(client.getOptions().getPlayback(), 
-                    String.format("OAuth client %d (%s) should have playback disabled", 
-                        i, client.getClass().getSimpleName()));
+                assertFalse(client.getOptions().getPlayback(),
+                        String.format("OAuth metadata client %d (%s) should have playback disabled",
+                                i, client.getClass().getSimpleName()));
             }
+            for (int i = 3; i < expectedTypes.length; i++) {
+                Client client = (Client) oauthClients[i];
+                assertTrue(client.getOptions().getPlayback(),
+                        String.format("OAuth playback client %d (%s) should have playback enabled",
+                                i, client.getClass().getSimpleName()));
+            }
+        }
+
+        @Test
+        @DisplayName("YouTube fallback clients can be disabled")
+        void youtubeFallbackClientsCanBeDisabled() throws Exception {
+            Method buildClients = getBuildYoutubeClientsMethod();
+
+            Object[] oauthClients = (Object[]) buildClients.invoke(null, true, false);
+
+            assertEquals(5, oauthClients.length,
+                    "OAuth mode without fallbacks should keep the original five clients");
+            assertEquals("Tv", oauthClients[3].getClass().getSimpleName());
+            assertEquals("TvHtml5SimplyWithThumbnail", oauthClients[4].getClass().getSimpleName());
         }
 
         @Test
@@ -271,12 +298,10 @@ class AudioSourceOAuthTest {
         void youtubeClientsConfiguredForNonOAuthMode() throws Exception {
             Method buildClients = getBuildYoutubeClientsMethod();
             
-            // Without OAuth
-            Object[] nonOauthClients = (Object[]) buildClients.invoke(null, false);
+            Object[] nonOauthClients = (Object[]) buildClients.invoke(null, false, true);
             assertNotNull(nonOauthClients, "Should return clients for non-OAuth mode");
             assertEquals(4, nonOauthClients.length, "Non-OAuth mode should use 4 clients");
             
-            // Verify client types
             assertEquals("AndroidVrWithThumbnail", nonOauthClients[0].getClass().getSimpleName(),
                 "First non-OAuth client should be <AndroidVrWithThumbnail>");
             assertEquals("MWebWithThumbnail", nonOauthClients[1].getClass().getSimpleName(),
@@ -285,26 +310,57 @@ class AudioSourceOAuthTest {
                 "Third non-OAuth client should be <WebWithThumbnail>");
             assertEquals("TvHtml5SimplyWithThumbnail", nonOauthClients[3].getClass().getSimpleName(),
                 "Fourth non-OAuth client should be <TvHtml5SimplyWithThumbnail>");
+            for (Object client : nonOauthClients) {
+                assertTrue(((Client) client).getOptions().getPlayback(),
+                        "Non-OAuth clients should all support playback");
+            }
         }
 
         @Test
-        @DisplayName("YouTube options include remote cipher when OAuth is enabled")
+        @DisplayName("YouTube options include the configured remote cipher")
         void youtubeOptionsIncludeRemoteCipherForOAuth() throws Exception {
             Method buildOptions = getBuildYoutubeOptionsMethod();
-            
             BotConfig mockConfig = createMockConfig(true, 10);
-            
-            // We can't easily verify the internal state of YoutubeSourceOptions,
-            // but we can verify the method completes without throwing
-            assertDoesNotThrow(() -> {
-                Object options = buildOptions.invoke(null, mockConfig);
-                assertNotNull(options, "Should return options for OAuth mode");
-            });
+            when(mockConfig.getYouTubeRemoteCipherUrl()).thenReturn("https://cipher.example/");
+            when(mockConfig.getYouTubeRemoteCipherPassword()).thenReturn("secret");
+            when(mockConfig.getYouTubeRemoteCipherUserAgent()).thenReturn("jasmine-test");
+
+            YoutubeSourceOptions options = (YoutubeSourceOptions) buildOptions.invoke(null, mockConfig);
+
+            assertEquals("https://cipher.example/", options.getRemoteCipherUrl());
+            assertEquals("secret", options.getRemoteCipherPassword());
+            assertEquals("jasmine-test", options.getRemoteCipherUserAgent());
+        }
+
+        @Test
+        @DisplayName("Blank remote cipher URL disables the remote cipher")
+        void blankRemoteCipherUrlDisablesRemoteCipher() throws Exception {
+            Method buildOptions = getBuildYoutubeOptionsMethod();
+            BotConfig mockConfig = createMockConfig(true, 10);
+            when(mockConfig.getYouTubeRemoteCipherUrl()).thenReturn("   ");
+
+            YoutubeSourceOptions options = (YoutubeSourceOptions) buildOptions.invoke(null, mockConfig);
+
+            assertNull(options.getRemoteCipherUrl());
+            assertNull(options.getRemoteCipherPassword());
+            assertNull(options.getRemoteCipherUserAgent());
+        }
+
+        @Test
+        @DisplayName("Remote cipher is not configured when OAuth is disabled")
+        void remoteCipherSkippedWithoutOAuth() throws Exception {
+            Method buildOptions = getBuildYoutubeOptionsMethod();
+            BotConfig mockConfig = createMockConfig(false, 10);
+
+            YoutubeSourceOptions options = (YoutubeSourceOptions) buildOptions.invoke(null, mockConfig);
+
+            assertNull(options.getRemoteCipherUrl());
         }
         
         private Method getBuildYoutubeClientsMethod() throws NoSuchMethodException {
             Class<?> audioSourceClass = com.github.marioatwired.jasmine.audio.AudioSource.class;
-            Method method = audioSourceClass.getDeclaredMethod("buildYoutubeClients", boolean.class);
+            Method method = audioSourceClass.getDeclaredMethod(
+                    "buildYoutubeClients", boolean.class, boolean.class);
             method.setAccessible(true);
             return method;
         }
