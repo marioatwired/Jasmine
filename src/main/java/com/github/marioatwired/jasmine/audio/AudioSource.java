@@ -18,7 +18,9 @@ package com.github.marioatwired.jasmine.audio;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
@@ -235,7 +237,7 @@ public enum AudioSource
         YoutubeSourceOptions options = buildYoutubeOptions(config);
         if (useOauth)
             applyTvUserAgentWorkaround();
-        Client[] clients = buildYoutubeClients(useOauth);
+        Client[] clients = buildYoutubeClients(useOauth, config.useYouTubeFallbackClients());
 
         YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager(options, clients);
         yt.setPlaylistPageCount(config.getMaxYTPlaylistPages());
@@ -259,10 +261,24 @@ public enum AudioSource
         
         if (config.useYouTubeOauth())
         {
-            options.setRemoteCipher("https://cipher.kikkia.dev/", null, "jasmine");
+            String remoteCipherUrl = config.getYouTubeRemoteCipherUrl();
+            if (remoteCipherUrl != null && !remoteCipherUrl.isBlank())
+            {
+                String password = blankToNull(config.getYouTubeRemoteCipherPassword());
+                String userAgent = config.getYouTubeRemoteCipherUserAgent();
+                options.setRemoteCipher(
+                        remoteCipherUrl.trim(),
+                        password,
+                        userAgent == null || userAgent.isBlank() ? "jasmine" : userAgent.trim());
+            }
         }
         
         return options;
+    }
+
+    private static String blankToNull(String value)
+    {
+        return value == null || value.isBlank() ? null : value;
     }
     
     /**
@@ -286,31 +302,44 @@ public enum AudioSource
      * <ul>
      *   <li><b>AndroidVrWithThumbnail</b> - Metadata loading (non-embedded, non-OAuth)</li>
      *   <li><b>MWebWithThumbnail</b> - Metadata loading (non-embedded, non-OAuth)</li>
-     *   <li><b>Web</b> - Metadata loading (non-embedded, non-OAuth)</li>
-     *   <li><b>Tv</b> - OAuth-compatible streaming-only client. Used as fallback for loading
-     *       audio stream formats during playback.</li>
-     *   <li><b>TvHtml5SimplyWithThumbnail</b> - *Not oAuth compatible* Used as fallback for loading
-     *       audio stream formats during playback.</li>
+     *   <li><b>WebWithThumbnail</b> - Metadata loading (non-embedded, non-OAuth)</li>
+     *   <li><b>Tv</b> - OAuth-compatible streaming-only client. Preferred for playback.</li>
+     *   <li><b>TvHtml5SimplyWithThumbnail</b> - Not OAuth compatible, used as a secondary
+     *       playback client.</li>
+     *   <li><b>AndroidVrWithThumbnail / MWebWithThumbnail / WebWithThumbnail</b> -
+     *       Optional playback fallbacks when the TV clients cannot load formats.</li>
      * </ul>
      * 
-     * <p>
+     * <p>The metadata clients deliberately have playback disabled. This lets the final
+     * playback attempt prefer the OAuth-compatible TV clients before falling back to
+     * the non-OAuth clients. The fallback clients are duplicate instances because the
+     * client options are per-instance.
      */
-    private static Client[] buildYoutubeClients(boolean useOauth)
+    private static Client[] buildYoutubeClients(boolean useOauth, boolean includeFallbackClients)
     {
         if (useOauth)
         {
-            // Clients configured for metadata loading only (no playback/streaming)
-            // This handles direct URLs without embedded player restrictions
+            // Clients configured for metadata loading only (no playback/streaming).
+            // This handles direct URLs without embedded player restrictions.
             ClientOptions metadataOnly = new ClientOptions();
             metadataOnly.setPlayback(false);
-            
-            return new Client[] {
-                new AndroidVrWithThumbnail(metadataOnly), // metadata loading (non-embedded, non-OAuth)
-                new MWebWithThumbnail(metadataOnly),      // metadata loading (non-embedded, non-OAuth)
-                new WebWithThumbnail(metadataOnly),       // metadata loading (non-embedded, non-OAuth)
-                new Tv(),
-                new TvHtml5SimplyWithThumbnail()
-            };
+
+            List<Client> clients = new ArrayList<>(8);
+            clients.add(new AndroidVrWithThumbnail(metadataOnly));
+            clients.add(new MWebWithThumbnail(metadataOnly));
+            clients.add(new WebWithThumbnail(metadataOnly));
+            clients.add(new Tv());
+            clients.add(new TvHtml5SimplyWithThumbnail());
+
+            if (includeFallbackClients)
+            {
+                // Duplicate clients with playback enabled. They are reached only after
+                // the TV clients fail to produce stream formats.
+                clients.add(new AndroidVrWithThumbnail());
+                clients.add(new MWebWithThumbnail());
+                clients.add(new WebWithThumbnail());
+            }
+            return clients.toArray(new Client[0]);
         }
         // Clients are required even without OAuth to properly handle YouTube URLs
         return new Client[] {

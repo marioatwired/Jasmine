@@ -57,6 +57,10 @@ public enum ConfigOption {
     UPDATE_ALERTS("updates.alerts", ConfigType.BOOLEAN, false, "Whether to alert owner about updates"),
     USE_EVAL("dangerous.eval", ConfigType.BOOLEAN, false, "Whether to enable eval command (DANGEROUS)"),
     USE_YOUTUBE_OAUTH("playback.youtube.useOAuth", ConfigType.BOOLEAN, false, "Whether to use YouTube OAuth2 for playback"),
+    USE_YOUTUBE_FALLBACK_CLIENTS("playback.youtube.fallbackClients", ConfigType.BOOLEAN, false, "Whether to add secondary YouTube playback fallback clients"),
+    YOUTUBE_REMOTE_CIPHER_URL("playback.youtube.remoteCipherUrl", ConfigType.STRING, false, "Remote cipher service URL (blank disables remote cipher)"),
+    YOUTUBE_REMOTE_CIPHER_PASSWORD("playback.youtube.remoteCipherPassword", ConfigType.STRING, false, "Remote cipher service password"),
+    YOUTUBE_REMOTE_CIPHER_USER_AGENT("playback.youtube.remoteCipherUserAgent", ConfigType.STRING, false, "Remote cipher service user agent"),
     
     // Numeric options
     MAX_SECONDS("playback.maxTrackSeconds", ConfigType.LONG, false, "Maximum track length in seconds (0 = no limit)"),

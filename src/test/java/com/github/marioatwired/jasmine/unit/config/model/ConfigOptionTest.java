@@ -109,6 +109,22 @@ class ConfigOptionTest {
         }
         
         @Test
+        @DisplayName("YouTube fallback and remote cipher options return correct values")
+        void youtubeAdvancedOptionsReturnCorrectValues() {
+            Config config = ConfigFactory.parseMap(Map.of("playback", Map.of("youtube", Map.of(
+                    "fallbackClients", false,
+                    "remoteCipherUrl", "https://cipher.example/",
+                    "remoteCipherPassword", "secret",
+                    "remoteCipherUserAgent", "jasmine-test"
+            ))));
+
+            assertFalse(ConfigOption.USE_YOUTUBE_FALLBACK_CLIENTS.getBoolean(config));
+            assertEquals("https://cipher.example/", ConfigOption.YOUTUBE_REMOTE_CIPHER_URL.getString(config));
+            assertEquals("secret", ConfigOption.YOUTUBE_REMOTE_CIPHER_PASSWORD.getString(config));
+            assertEquals("jasmine-test", ConfigOption.YOUTUBE_REMOTE_CIPHER_USER_AGENT.getString(config));
+        }
+
+        @Test
         @DisplayName("getConfig() returns nested config")
         void getConfigReturnsNestedConfig() {
             Map<String, Object> aliasesMap = Map.of("play", List.of("p"));

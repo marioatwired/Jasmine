@@ -61,8 +61,9 @@ public class BotConfig {
     private Path path = null;
     private String token, prefix, altprefix, helpWord, playlistsFolder, logLevel,
             successEmoji, warningEmoji, errorEmoji, loadingEmoji, searchingEmoji,
-            evalEngine, guiTheme;
-    private boolean stayInChannel, songInGame, npImages, npMinimalMessage, npShowButtons, showNpProgressBar, updatealerts, useEval, dbots, useYouTubeOauth, guiEnabled;
+            evalEngine, guiTheme, youtubeRemoteCipherUrl, youtubeRemoteCipherPassword,
+            youtubeRemoteCipherUserAgent;
+    private boolean stayInChannel, songInGame, npImages, npMinimalMessage, npShowButtons, showNpProgressBar, updatealerts, useEval, dbots, useYouTubeOauth, useYouTubeFallbackClients, guiEnabled;
     private long owner, maxSeconds, aloneTimeUntilStop;
     private long clearChannelAgeDays;
     private int maxYTPlaylistPages, maxHistorySize, guiFontSize, nasBufferMs, frameBufferMs, proxyPort, clearChannelDeleteLimit;
@@ -298,6 +299,10 @@ public class BotConfig {
         maxYTPlaylistPages = MAX_YT_PLAYLIST_PAGES.getInt(config);
         maxHistorySize = MAX_HISTORY_SIZE.getInt(config);
         useYouTubeOauth = USE_YOUTUBE_OAUTH.getBoolean(config);
+        useYouTubeFallbackClients = USE_YOUTUBE_FALLBACK_CLIENTS.getBoolean(config);
+        youtubeRemoteCipherUrl = YOUTUBE_REMOTE_CIPHER_URL.getString(config);
+        youtubeRemoteCipherPassword = YOUTUBE_REMOTE_CIPHER_PASSWORD.getString(config);
+        youtubeRemoteCipherUserAgent = YOUTUBE_REMOTE_CIPHER_USER_AGENT.getString(config);
         aloneTimeUntilStop = ALONE_TIME_UNTIL_STOP.getLong(config);
         playlistsFolder = PLAYLISTS_FOLDER.getString(config);
         aliases = ALIASES.getConfig(config);
@@ -553,6 +558,22 @@ public class BotConfig {
 
     public boolean useYouTubeOauth() {
         return useYouTubeOauth;
+    }
+
+    public boolean useYouTubeFallbackClients() {
+        return useYouTubeFallbackClients;
+    }
+
+    public String getYouTubeRemoteCipherUrl() {
+        return youtubeRemoteCipherUrl;
+    }
+
+    public String getYouTubeRemoteCipherPassword() {
+        return youtubeRemoteCipherPassword;
+    }
+
+    public String getYouTubeRemoteCipherUserAgent() {
+        return youtubeRemoteCipherUserAgent;
     }
 
     public String getMaxTime() {

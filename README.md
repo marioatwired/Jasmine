@@ -27,7 +27,7 @@
 - Import and export playlists as portable `.txt` attachments (`playlist import <name>` with a file attached; `playlist export <name>`).
 - Queue, current-track, and playback-history restoration across bot restarts.
 - YouTube, SoundCloud, Bandcamp, Vimeo, Twitch, HTTP streams, and local files.
-- YouTube OAuth device flow for sources that require sign-in.
+- YouTube OAuth device flow for sources that require sign-in, with automatic playback client fallback.
 - Granular HTTP proxy configuration for Lavaplayer, JDA, and GitHub update checks.
 - Docker image with a minimal JRE and multi-architecture support (`amd64` and `arm64`).
 - Docker credentials via environment variables or Docker secrets.

@@ -65,6 +65,10 @@ from the config file or prompted for when an interactive terminal is available.
 | `maxHistorySize` | `40` | Playback history entries. `0` disables history. |
 | `skipRatio` | `0.55` | Fraction of listeners required to vote-skip. |
 | `youtube.useOAuth` | `false` | Use the YouTube OAuth device flow. |
+| `youtube.fallbackClients` | `true` | Add secondary playback clients after the OAuth TV clients. |
+| `youtube.remoteCipherUrl` | `https://cipher.kikkia.dev/` | Remote cipher URL for OAuth playback. Blank uses the local cipher. |
+| `youtube.remoteCipherPassword` | empty | Optional remote cipher password. |
+| `youtube.remoteCipherUserAgent` | `jasmine` | User agent sent to the remote cipher service. |
 | `audioSources` | all `true` | Enable or disable YouTube, SoundCloud, Bandcamp, Vimeo, Twitch, Beam, GetYarn, Nico, HTTP, and local sources. |
 | `transforms` | `{}` | Advanced input rewriting rules. |
 
@@ -165,6 +169,19 @@ playback {
 On the next startup, Jasmine prints a device code (and DMs the owner when
 possible). Open <https://www.google.com/device>, enter the code, and authorize
 the bot. The refresh token is stored locally and reused.
+
+When OAuth is enabled, Jasmine uses the TV clients first for playback and then
+falls back to `AndroidVrWithThumbnail`, `MWebWithThumbnail`, and
+`WebWithThumbnail` if the TV clients cannot load stream formats. Set
+`fallbackClients = false` to use only the original TV clients.
+
+OAuth playback also uses the remote cipher service configured in
+`remoteCipherUrl`. Leave it empty to use the local cipher implementation. Set
+`remoteCipherPassword` and `remoteCipherUserAgent` when the service requires
+them.
+
+`poToken` is not available in `youtube-source` 1.18.2, so Jasmine does not expose
+that option yet.
 
 ## Configuration updates
 
