@@ -5,6 +5,30 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added `playlist view` / `playlist edit` with paginated playlist tracks and
+  interactive editing.
+- Added `playlist remove`, `playlist move`, and `playlist replace` for editing
+  saved playlist entries.
+
+### Changed
+
+- Playlist append and editing commands are available to DJs, members with
+  Manage Server, and the bot owner instead of only the bot owner.
+- The `/playlists` details button is now labeled **View / Edit** and the editor
+  hints that selecting a track exposes edit actions.
+
+### Fixed
+
+- `serversettings.json` writes now use an atomic file replacement fallback when
+  the existing file is read-only.
+- Playlist shuffle directives are preserved when editing a shuffled playlist.
+- Playlist previews and editors now show the stored file order instead of a
+  shuffled snapshot.
+
 ## [0.6.3] - 2026-11-10
 
 ### Changed

@@ -96,7 +96,8 @@ public class PlaylistDraftService
         {
             return PlaylistDraftMutationResult.error("There are no unsaved changes.");
         }
-        String content = String.join(System.lineSeparator(), state.items);
+        String content = (state.shuffle ? "#shuffle" + System.lineSeparator() : "")
+                + String.join(System.lineSeparator(), state.items);
         PlaylistLoader.PlaylistResult<Void> writeResult = bot.getPlaylistLoader()
                 .writePlaylistResult(context.playlistName(), content);
         if (!writeResult.isSuccess())
@@ -172,7 +173,8 @@ public class PlaylistDraftService
             return null;
         }
         Playlist playlist = playlistResult.getValue();
-        PlaylistDraftState created = new PlaylistDraftState(new ArrayList<>(playlist.getItems()));
+        PlaylistDraftState created = new PlaylistDraftState(
+                new ArrayList<>(playlist.getItems()), playlist.isShuffle());
         PlaylistDraftState raced = playlistDrafts.putIfAbsent(key, created);
         return raced != null ? raced : created;
     }
@@ -184,12 +186,14 @@ public class PlaylistDraftService
     private static class PlaylistDraftState
     {
         private final List<String> items;
+        private final boolean shuffle;
         private boolean dirty;
         private int revision;
 
-        private PlaylistDraftState(List<String> items)
+        private PlaylistDraftState(List<String> items, boolean shuffle)
         {
             this.items = items;
+            this.shuffle = shuffle;
         }
     }
 }

@@ -346,4 +346,19 @@ class PlaylistLoaderTest
         assertNotNull(playlist);
         assertEquals(List.of("https://example.com/a", "local-file"), playlist.getItems());
     }
+
+    @Test
+    @DisplayName("getPlaylistResult() preserves file order when shuffle is enabled")
+    void getPlaylistResult_preservesFileOrderWhenShuffleEnabled() throws IOException
+    {
+        Files.writeString(tempDir.resolve("shuffled.txt"),
+                "#shuffle\nhttps://example.com/a\nhttps://example.com/b\nhttps://example.com/c\n");
+
+        PlaylistLoader.Playlist playlist = loader.getPlaylist("shuffled");
+
+        assertNotNull(playlist);
+        assertTrue(playlist.isShuffle());
+        assertEquals(List.of("https://example.com/a", "https://example.com/b", "https://example.com/c"),
+                playlist.getItems());
+    }
 }

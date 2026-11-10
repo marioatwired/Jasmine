@@ -23,7 +23,7 @@
 - Slash commands and classic text commands.
 - A desktop GUI with a console, queue timeline, source health, and performance panels.
 - Per-guild settings, DJ role, custom prefix, and queue types (linear or fair).
-- Playlists, playback history, repeat modes, seeking, and vote-skip.
+- Playlists with paginated viewing, interactive editing, and DJ/owner controls.
 - Import and export playlists as portable `.txt` attachments (`playlist import <name>` with a file attached; `playlist export <name>`).
 - Queue, current-track, and playback-history restoration across bot restarts.
 - YouTube, SoundCloud, Bandcamp, Vimeo, Twitch, HTTP streams, and local files.
@@ -87,7 +87,27 @@ cp docker-compose.example.yml docker-compose.yml
 docker compose up -d
 ```
 
-The container runs as UID/GID `10001` (`jasmine`). Make sure the mounted directory is writable by that user, or set `user:` in the Compose file.
+The container runs as UID/GID `10001` (`jasmine`). Make sure the mounted directory is writable by that user, or set `user:` in the Compose file:
+
+```bash
+sudo chown -R 10001:10001 /path/to/jasmine
+```
+
+If `config.txt` or `serversettings.json` is read-only because it was created by another user, fix the mount ownership with the command above. Pulling a new image does not change host file ownership.
+
+## Playlist management
+
+Saved playlists can be viewed and edited from Discord:
+
+- `/playlists` opens the interactive browser. Select a playlist and choose **View / Edit** to see its tracks, select a track, and remove or reorder it before saving.
+- `playlist view <name> [page]` opens the paginated playlist view and editor directly (aliases: `playlist show`, `playlist songs`, `playlist edit`).
+- `playlist append <name> <URL> | <URL> | ...` adds entries (aliases: `add`, `amend`, `ammend`).
+- `playlist remove <name> <position>` removes an entry.
+- `playlist move <name> <from> <to>` reorders an entry.
+- `playlist replace <name> <position> <URL>` changes an entry's URL.
+- `playlist all` lists available playlists; `playlist make`, `delete`, `import`, `export`, and `setdefault` remain owner-only.
+
+Viewing playlists is available to everyone. Adding, removing, moving, and replacing entries requires the DJ role, **Manage Server**, or the bot owner. Changes made with the text commands are saved immediately; the interactive editor uses **Save** and **Discard**.
 
 ## Verify a release
 
