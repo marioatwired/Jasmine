@@ -25,6 +25,7 @@ import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
 import com.github.marioatwired.jasmine.service.dto.PlaylistDetailsInfo;
 import com.github.marioatwired.jasmine.service.dto.PlaylistDraftContext;
 import com.github.marioatwired.jasmine.service.dto.PlaylistDraftMutationResult;
+import com.github.marioatwired.jasmine.service.dto.PlaylistMutationResult;
 import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
 import com.github.marioatwired.jasmine.service.dto.PlaylistPreviewWithTracks;
 import com.github.marioatwired.jasmine.service.dto.PlaylistTracksPageInfo;
@@ -51,6 +52,7 @@ public class PlaylistService
     private final Bot bot;
     private final TrackEnqueuer trackEnqueuer;
     private final PlaylistDraftService playlistDraftService;
+    private final PlaylistMutationService playlistMutationService;
     private final PlaylistPreviewService playlistPreviewService;
     private final FavoritesService favoritesService;
     private final HistoryPlaylistService historyPlaylistService;
@@ -60,6 +62,7 @@ public class PlaylistService
         this.bot = bot;
         this.trackEnqueuer = trackEnqueuer;
         this.playlistDraftService = new PlaylistDraftService(bot);
+        this.playlistMutationService = new PlaylistMutationService(bot);
         this.playlistPreviewService = new PlaylistPreviewService(bot);
         this.favoritesService = new FavoritesService(bot);
         this.historyPlaylistService = new HistoryPlaylistService(bot);
@@ -244,6 +247,26 @@ public class PlaylistService
     {
         return bot.getConfig().getOwnerId() == member.getIdLong()
                 || DJCommand.checkDJPermission(bot, guild, member);
+    }
+
+    public PlaylistMutationResult appendPlaylistItems(String playlistName, List<String> items)
+    {
+        return playlistMutationService.appendItems(playlistName, items);
+    }
+
+    public PlaylistMutationResult removePlaylistItem(String playlistName, int position)
+    {
+        return playlistMutationService.removeItem(playlistName, position);
+    }
+
+    public PlaylistMutationResult movePlaylistItem(String playlistName, int fromPosition, int toPosition)
+    {
+        return playlistMutationService.moveItem(playlistName, fromPosition, toPosition);
+    }
+
+    public PlaylistMutationResult replacePlaylistItem(String playlistName, int position, String item)
+    {
+        return playlistMutationService.replaceItem(playlistName, position, item);
     }
 
     public PlaylistDraftContext buildPlaylistDraftContext(long guildId, long channelId, long messageId,

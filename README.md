@@ -121,11 +121,12 @@ Environment values override `config.txt`. Prefer `*_FILE` secrets when the token
 Saved playlists can be viewed and edited from Discord:
 
 - `/playlists` opens the interactive browser. Select a playlist and choose **View / Edit** to see its tracks, select a track, and remove or reorder it before saving.
-- `playlist view <name> [page]` opens the paginated playlist view and editor directly (aliases: `playlist show`, `playlist songs`, `playlist edit`).
-- `playlist append <name> <URL> | <URL> | ...` adds entries (aliases: `add`, `amend`, `ammend`).
-- `playlist remove <name> <position>` removes an entry.
-- `playlist move <name> <from> <to>` reorders an entry.
-- `playlist replace <name> <position> <URL>` changes an entry's URL.
+- `/playlist view <name> [page]` opens the same paginated editor directly.
+- `/playlist append <name> urls:"<URL> | <URL>"` adds entries.
+- `/playlist remove <name> <position>` removes an entry.
+- `/playlist move <name> <from> <to>` reorders an entry.
+- `/playlist replace <name> <position> <URL>` changes an entry's URL.
+- Text equivalents: `playlist view <name> [page]` (aliases: `show`, `songs`, `edit`), `playlist append <name> <URL> | <URL>` (aliases: `add`, `amend`, `ammend`), `playlist remove`, `playlist move`, and `playlist replace`.
 - `playlist all` lists available playlists; `playlist make`, `delete`, `import`, `export`, and `setdefault` remain owner-only.
 
 Viewing playlists is available to everyone. Adding, removing, moving, and replacing entries requires the DJ role, **Manage Server**, or the bot owner. Changes made with the text commands are saved immediately; the interactive editor uses **Save** and **Discard**.

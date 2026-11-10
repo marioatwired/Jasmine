@@ -34,6 +34,7 @@ import com.github.marioatwired.jasmine.commands.v2.music.HistorySlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.music.NowPlayingSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.music.NpSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.music.PlaySlashCmd;
+import com.github.marioatwired.jasmine.commands.v2.music.PlaylistSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.music.PlaylistsSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.music.QueueSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.music.RemoveSlashCmd;
@@ -108,6 +109,7 @@ public class CommandFactory {
                     new NowPlayingSlashCmd(bot),
                     new NpSlashCmd(bot),
                     new PlaySlashCmd(bot),
+                    new PlaylistSlashCmd(bot),
                     new PlaylistsSlashCmd(bot),
                     new QueueSlashCmd(bot),
                     new HistorySlashCmd(bot),

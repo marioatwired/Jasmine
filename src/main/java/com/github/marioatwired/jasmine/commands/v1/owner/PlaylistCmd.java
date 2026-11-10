@@ -19,16 +19,12 @@ import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.github.marioatwired.jasmine.Bot;
 import com.github.marioatwired.jasmine.commands.v1.OwnerCommand;
-import com.github.marioatwired.jasmine.commands.v2.music.PlaylistsSlashCmd;
+import com.github.marioatwired.jasmine.commands.v2.music.PlaylistViewSupport;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
-import com.github.marioatwired.jasmine.playlist.PlaylistLoader.Playlist;
 import com.github.marioatwired.jasmine.service.PlaylistTransferService;
-import com.github.marioatwired.jasmine.service.dto.PlaylistDetailsInfo;
-import com.github.marioatwired.jasmine.service.dto.PlaylistNamesInfo;
+import com.github.marioatwired.jasmine.service.dto.PlaylistMutationResult;
 import com.github.marioatwired.jasmine.service.dto.PlaylistTransferResult;
-import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.entities.Message.Attachment;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
@@ -99,37 +95,6 @@ public class PlaylistCmd extends Command
             return false;
         }
         return true;
-    }
-
-    private Playlist requirePlaylist(CommandEvent event, String name)
-    {
-        Playlist playlist = bot.getPlaylistLoader().getPlaylist(name);
-        if(playlist==null)
-            event.replyError("Playlist `"+name+"` doesn't exist!");
-        return playlist;
-    }
-
-    private void writeItems(CommandEvent event, String name, List<String> items, boolean shuffle,
-                            String successMessage)
-    {
-        PlaylistLoader.PlaylistResult<Void> result = bot.getPlaylistLoader()
-                .writePlaylistResult(name, buildPlaylistContent(items, shuffle));
-        if(!result.isSuccess())
-        {
-            event.replyError("I was unable to update playlist `"+name+"`: "+result.getError().getMessage());
-            return;
-        }
-        event.replySuccess(successMessage);
-    }
-
-    private static String buildPlaylistContent(List<String> items, boolean shuffle)
-    {
-        StringBuilder builder = new StringBuilder();
-        if(shuffle)
-            builder.append("#shuffle").append(System.lineSeparator());
-        for(String item: items)
-            builder.append(item).append(System.lineSeparator());
-        return builder.toString();
     }
 
     private static int parsePosition(String value)
@@ -236,31 +201,30 @@ public class PlaylistCmd extends Command
                 return;
             }
             String pname = PlaylistLoader.sanitizeName(parts[0]);
-            Playlist playlist = requirePlaylist(event, pname);
-            if(playlist==null)
-                return;
-
-            List<String> items = new ArrayList<>(playlist.getItems());
-            int added = 0;
+            List<String> items = new ArrayList<>();
             for(String url: parts[1].split("\\|"))
             {
                 String item = url.trim();
                 if(item.startsWith("<") && item.endsWith(">"))
                     item = item.substring(1, item.length()-1);
                 if(!item.isEmpty())
-                {
                     items.add(item);
-                    added++;
-                }
             }
-            if(added==0)
+            if(items.isEmpty())
             {
                 event.replyError("Please include at least one URL to add!");
                 return;
             }
 
-            writeItems(event, pname, items, playlist.isShuffle(),
-                    "Successfully added "+added+" item(s) to playlist `"+pname+"`!");
+            PlaylistMutationResult result = bot.getMusicService()
+                    .appendPlaylistItems(pname, items);
+            if(!result.success)
+            {
+                event.replyError(result.errorMessage);
+                return;
+            }
+            event.replySuccess("Successfully added "+items.size()
+                    +" item(s) to playlist `"+pname+"`!");
         }
     }
 
@@ -288,21 +252,15 @@ public class PlaylistCmd extends Command
                 return;
             }
             String pname = PlaylistLoader.sanitizeName(parts[0]);
-            Playlist playlist = requirePlaylist(event, pname);
-            if(playlist==null)
-                return;
-
             int position = parsePosition(parts[1]);
-            List<String> items = new ArrayList<>(playlist.getItems());
-            if(position<1 || position>items.size())
+            PlaylistMutationResult result = bot.getMusicService()
+                    .removePlaylistItem(pname, position);
+            if(!result.success)
             {
-                event.replyError("Position must be between 1 and "+items.size()+".");
+                event.replyError(result.errorMessage);
                 return;
             }
-
-            items.remove(position-1);
-            writeItems(event, pname, items, playlist.isShuffle(),
-                    "Removed item #"+position+" from playlist `"+pname+"`.");
+            event.replySuccess("Removed item #"+position+" from playlist `"+pname+"`.");
         }
     }
 
@@ -329,28 +287,16 @@ public class PlaylistCmd extends Command
                 return;
             }
             String pname = PlaylistLoader.sanitizeName(parts[0]);
-            Playlist playlist = requirePlaylist(event, pname);
-            if(playlist==null)
-                return;
-
             int from = parsePosition(parts[1]);
             int to = parsePosition(parts[2]);
-            List<String> items = new ArrayList<>(playlist.getItems());
-            if(from<1 || from>items.size() || to<1 || to>items.size())
+            PlaylistMutationResult result = bot.getMusicService()
+                    .movePlaylistItem(pname, from, to);
+            if(!result.success)
             {
-                event.replyError("Positions must be between 1 and "+items.size()+".");
+                event.replyError(result.errorMessage);
                 return;
             }
-            if(from==to)
-            {
-                event.replyWarning("That song is already at position #"+to+".");
-                return;
-            }
-
-            String item = items.remove(from-1);
-            items.add(to-1, item);
-            writeItems(event, pname, items, playlist.isShuffle(),
-                    "Moved item #"+from+" to #"+to+" in playlist `"+pname+"`.");
+            event.replySuccess("Moved item #"+from+" to #"+to+" in playlist `"+pname+"`.");
         }
     }
 
@@ -378,30 +324,18 @@ public class PlaylistCmd extends Command
                 return;
             }
             String pname = PlaylistLoader.sanitizeName(parts[0]);
-            Playlist playlist = requirePlaylist(event, pname);
-            if(playlist==null)
-                return;
-
             int position = parsePosition(parts[1]);
-            List<String> items = new ArrayList<>(playlist.getItems());
-            if(position<1 || position>items.size())
-            {
-                event.replyError("Position must be between 1 and "+items.size()+".");
-                return;
-            }
-
             String item = parts[2].trim();
             if(item.startsWith("<") && item.endsWith(">"))
                 item = item.substring(1, item.length()-1);
-            if(item.isEmpty())
+            PlaylistMutationResult result = bot.getMusicService()
+                    .replacePlaylistItem(pname, position, item);
+            if(!result.success)
             {
-                event.replyError("Please include the replacement URL.");
+                event.replyError(result.errorMessage);
                 return;
             }
-
-            items.set(position-1, item);
-            writeItems(event, pname, items, playlist.isShuffle(),
-                    "Replaced item #"+position+" in playlist `"+pname+"`.");
+            event.replySuccess("Replaced item #"+position+" in playlist `"+pname+"`.");
         }
     }
 
@@ -580,94 +514,25 @@ public class PlaylistCmd extends Command
                 namePart = args.substring(0, args.length()-parts[parts.length-1].length()).trim();
             }
 
-            String sanitized = PlaylistLoader.sanitizeName(namePart);
-            PlaylistNamesInfo namesInfo = bot.getMusicService().getAvailablePlaylistNames();
-            if(namesInfo.hasError())
-            {
-                event.replyError(namesInfo.errorMessage);
-                return;
-            }
-
-            int playlistIndex = -1;
-            String playlistName = null;
-            for(int i=0; i<namesInfo.names.size(); i++)
-            {
-                if(namesInfo.names.get(i).equalsIgnoreCase(sanitized))
-                {
-                    playlistIndex = i+1;
-                    playlistName = namesInfo.names.get(i);
-                    break;
-                }
-            }
-            if(playlistIndex<1)
-            {
-                event.replyError("Playlist `"+sanitized+"` doesn't exist!");
-                return;
-            }
-
-            PlaylistDetailsInfo details = bot.getMusicService().getPlaylistDetails(playlistName);
-            if(details==null)
-            {
-                event.replyError("Playlist `"+playlistName+"` doesn't exist!");
-                return;
-            }
-
-            int totalPages = Math.max(1, PlaylistsSlashCmd.getPlaylistTrackTotalPages(details.totalItems));
-            int page = Math.max(1, Math.min(requestedPage, totalPages));
-            int listPage = (playlistIndex-1) / PlaylistsSlashCmd.PLAYLISTS_PER_PAGE + 1;
-            long userId = event.getAuthor().getIdLong();
-            boolean canEdit = event.getGuild()!=null && event.getMember()!=null
-                    && bot.getMusicService().canEditPlaylistEntries(event.getGuild(), event.getMember());
-            String resolvedPlaylistName = playlistName;
-            int resolvedPlaylistIndex = playlistIndex;
-
-            bot.getMusicService().loadPlaylistPageWithTracks(resolvedPlaylistName, page,
-                    PlaylistsSlashCmd.PLAYLIST_TRACKS_PER_PAGE, result ->
+            PlaylistViewSupport.open(bot.getMusicService(), event.getGuild(), event.getMember(),
+                    event.getAuthor().getIdLong(), namePart, requestedPage, result ->
                     {
-                        if(result==null)
+                        if(result.hasError())
                         {
-                            event.replyError("Playlist `"+resolvedPlaylistName+"` no longer exists.");
+                            event.replyError(result.errorMessage());
                             return;
                         }
-
-                        int resultPages = Math.max(1,
-                                PlaylistsSlashCmd.getPlaylistTrackTotalPages(result.totalItems));
-                        int safePage = Math.max(1, Math.min(page, resultPages));
-                        int tracksOnPage = PlaylistsSlashCmd.getPlaylistTracksOnPage(
-                                safePage, result.totalItems);
-                        MessageEmbed embed = PlaylistsSlashCmd.buildPlaylistTracksEmbed(
-                                resolvedPlaylistName,
-                                result.totalItems,
-                                safePage,
-                                resultPages,
-                                result.formattedLines,
-                                0,
-                                canEdit,
-                                false,
-                                event.getMember()!=null ? event.getMember().getColors().getPrimary() : null
-                        );
-
-                        if(event.getGuild()==null)
+                        if(result.hasComponents())
                         {
-                            event.reply(embed);
-                            return;
+                            event.reply(new MessageCreateBuilder()
+                                    .addEmbeds(result.embed())
+                                    .setComponents(result.components())
+                                    .build());
                         }
-
-                        List<ActionRow> components = PlaylistsSlashCmd.buildPlaylistDetailsComponents(
-                                resolvedPlaylistIndex,
-                                listPage,
-                                safePage,
-                                resultPages,
-                                tracksOnPage,
-                                0,
-                                userId,
-                                canEdit,
-                                false
-                        );
-                        event.reply(new MessageCreateBuilder()
-                                .addEmbeds(embed)
-                                .setComponents(components)
-                                .build());
+                        else
+                        {
+                            event.reply(result.embed());
+                        }
                     });
         }
     }
