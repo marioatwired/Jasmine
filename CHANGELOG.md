@@ -16,7 +16,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ### Fixed
 
 - Multi-architecture Docker builds no longer try to resolve unused JavaFX
-  artifacts pulled in by FlatLaf Extras.
+  artifacts pulled in by FlatLaf Extras. The Docker dependency prefetch now
+  uses `dependency:resolve` instead of `dependency:go-offline`.
 
 ## [0.6.1] - 2026-11-10
 
