@@ -323,6 +323,17 @@
             <groupId>com.formdev</groupId>
             <artifactId>flatlaf-extras</artifactId>
             <version>${flatlaf.version}</version>
+            <exclusions>
+                <!--
+                    FlatLaf Extras pulls the optional jSVG JavaFX bridge. Jasmine's
+                    Swing GUI does not use JavaFX, and its platform-specific
+                    classifiers are not available for every Docker architecture.
+                -->
+                <exclusion>
+                    <groupId>com.github.weisj.jsvg</groupId>
+                    <artifactId>jsvg-javafx</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Testing Dependencies -->
