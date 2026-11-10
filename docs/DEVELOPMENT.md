@@ -163,6 +163,9 @@ The package rename means most upstream patches will need manual adaptation.
    git push origin v0.7.0
    ```
 
+   The tag must point to the current `master` head; the workflow rejects tags
+   on older commits.
+
 6. The `Release` workflow builds `Jasmine-0.7.0.jar`, runs the packaged-JAR
    smoke test, generates the SHA-256 checksum, creates the GitHub release,
    verifies the published Docker manifest, and publishes
@@ -182,3 +185,7 @@ docker run --rm -it -v "$(pwd)/data:/musicbot" jasmine:local
 
 The Docker build uses the `docker` Maven profile, which excludes the Windows and
 macOS JDave/udpqueue native libraries. The runtime image is multi-arch.
+
+CI and release workflows run `scripts/smoke-test-docker.sh` against a locally
+built image before publishing. It verifies first-run `config.txt` generation and
+startup with `JASMINE_TOKEN` / `JASMINE_OWNER`.
