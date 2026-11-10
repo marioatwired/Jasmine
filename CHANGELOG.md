@@ -5,13 +5,16 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.3] - 2026-11-10
+
+### Changed
+
+- Updated `youtube-source` to 1.18.2.
 
 ### Fixed
 
 - YouTube OAuth playback now uses a compatible TVHTML5 user-agent, avoiding
   the "The page needs to be reloaded" failure seen on some videos.
-- Updated `youtube-source` to 1.18.2.
 
 ## [0.6.2] - 2026-11-10
 
