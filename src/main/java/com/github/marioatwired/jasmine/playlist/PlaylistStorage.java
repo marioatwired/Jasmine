@@ -30,8 +30,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -329,6 +331,49 @@ final class PlaylistStorage
         {
             return rememberError(PlaylistErrorType.STORAGE_UNAVAILABLE,
                     "Failed to delete playlist `" + name + "`: " + ex.getMessage(), config.getPlaylistsFolder(), ex);
+        }
+    }
+
+    public PlaylistResult<Void> renamePlaylistResult(String oldName, String newName)
+    {
+        PlaylistResult<Path> readiness = ensureStorageReady();
+        if(!readiness.isSuccess())
+            return PlaylistResult.failure(readiness.getError());
+        if(oldName.equals(newName))
+            return PlaylistResult.success(null);
+
+        Path source = playlistPath(readiness.getValue(), oldName);
+        Path target = playlistPath(readiness.getValue(), newName);
+        if(!Files.exists(source))
+        {
+            return PlaylistResult.failure(PlaylistError.of(PlaylistErrorType.PLAYLIST_NOT_FOUND,
+                    "Playlist `" + oldName + "` does not exist.", config.getPlaylistsFolder(), null));
+        }
+        if(Files.exists(target))
+        {
+            return PlaylistResult.failure(PlaylistError.of(PlaylistErrorType.PLAYLIST_ALREADY_EXISTS,
+                    "Playlist `" + newName + "` already exists.", config.getPlaylistsFolder(), null));
+        }
+
+        try
+        {
+            try
+            {
+                Files.move(source, target, StandardCopyOption.ATOMIC_MOVE);
+            }
+            catch(AtomicMoveNotSupportedException ex)
+            {
+                Files.move(source, target);
+            }
+            invalidateFavoritesCacheIfNeeded(oldName);
+            invalidateFavoritesCacheIfNeeded(newName);
+            return PlaylistResult.success(null);
+        }
+        catch(IOException ex)
+        {
+            return rememberError(PlaylistErrorType.STORAGE_UNAVAILABLE,
+                    "Failed to rename playlist `" + oldName + "` to `" + newName + "`: " + ex.getMessage(),
+                    config.getPlaylistsFolder(), ex);
         }
     }
 

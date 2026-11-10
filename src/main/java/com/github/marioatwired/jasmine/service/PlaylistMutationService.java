@@ -56,9 +56,44 @@ public class PlaylistMutationService
 
         return update(playlistName, items ->
         {
-            items.addAll(normalized);
-            return PlaylistMutationResult.success(items.size());
+            int added = 0;
+            int duplicates = 0;
+            for (String item : normalized)
+            {
+                if (items.contains(item))
+                {
+                    duplicates++;
+                }
+                else
+                {
+                    items.add(item);
+                    added++;
+                }
+            }
+            return PlaylistMutationResult.appendSuccess(items.size(), added, duplicates);
         });
+    }
+
+    public PlaylistMutationResult renamePlaylist(String oldName, String newName)
+    {
+        String sanitizedOld = PlaylistLoader.sanitizeName(oldName);
+        String sanitizedNew = PlaylistLoader.sanitizeName(newName);
+        if (sanitizedOld.isEmpty() || sanitizedNew.isEmpty())
+        {
+            return PlaylistMutationResult.error("Please provide a valid playlist name.");
+        }
+        if (sanitizedOld.equals(sanitizedNew))
+        {
+            return PlaylistMutationResult.error("The new name is the same as the current name.");
+        }
+
+        PlaylistLoader.PlaylistResult<Void> result =
+                bot.getPlaylistLoader().renamePlaylistResult(sanitizedOld, sanitizedNew);
+        if (!result.isSuccess())
+        {
+            return PlaylistMutationResult.error(PlaylistErrorMessages.toMessage(result.getError()));
+        }
+        return PlaylistMutationResult.success(0);
     }
 
     public PlaylistMutationResult removeItem(String playlistName, int position)
@@ -149,6 +184,7 @@ public class PlaylistMutationService
             return PlaylistMutationResult.error(
                     PlaylistErrorMessages.toMessage(writeResult.getError()));
         }
-        return PlaylistMutationResult.success(items.size());
+        return PlaylistMutationResult.appendSuccess(
+                items.size(), mutationResult.addedItems, mutationResult.duplicateItems);
     }
 }

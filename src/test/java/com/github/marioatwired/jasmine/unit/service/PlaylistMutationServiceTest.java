@@ -68,8 +68,44 @@ class PlaylistMutationServiceTest
 
         assertTrue(result.success);
         assertEquals(4, result.totalItems);
+        assertEquals(2, result.addedItems);
+        assertEquals(0, result.duplicateItems);
         assertEquals("#shuffle" + nl + "url1" + nl + "url2" + nl + "url3" + nl + "url4",
                 readPlaylist("mix"));
+    }
+
+    @Test
+    @DisplayName("appendItems() skips duplicate entries")
+    void appendItemsSkipsDuplicates() throws IOException
+    {
+        writePlaylist("mix", "url1" + nl + "url2" + nl);
+
+        PlaylistMutationResult result = service.appendItems("mix", List.of("url1", "url3", "url3"));
+
+        assertTrue(result.success);
+        assertEquals(3, result.totalItems);
+        assertEquals(1, result.addedItems);
+        assertEquals(2, result.duplicateItems);
+        assertEquals("url1" + nl + "url2" + nl + "url3", readPlaylist("mix"));
+    }
+
+    @Test
+    @DisplayName("renamePlaylist() moves the file and refuses to overwrite")
+    void renamePlaylistMovesFile() throws IOException
+    {
+        writePlaylist("old", "url1" + nl);
+        writePlaylist("taken", "url2" + nl);
+
+        PlaylistMutationResult result = service.renamePlaylist("old", "new");
+
+        assertTrue(result.success);
+        assertFalse(Files.exists(tempDir.resolve("old.txt")));
+        assertEquals("url1" + nl, Files.readString(tempDir.resolve("new.txt")));
+
+        PlaylistMutationResult collision = service.renamePlaylist("new", "taken");
+        assertFalse(collision.success);
+        assertTrue(collision.errorMessage.contains("already exists"));
+        assertEquals("url2" + nl, Files.readString(tempDir.resolve("taken.txt")));
     }
 
     @Test

@@ -47,7 +47,20 @@ public class FavoritesService
 
     public void addCurrentTrackToFavorites(Guild guild, Member member, OutputAdapter output)
     {
-        if (!requireDJPermission(guild, member, output, "add the current track to favorites"))
+        addCurrentTrack(guild, member, FAVORITES_PLAYLIST_NAME, output, true);
+    }
+
+    public void addCurrentTrackToPlaylist(Guild guild, Member member, String playlistName,
+                                          OutputAdapter output)
+    {
+        addCurrentTrack(guild, member, playlistName, output, false);
+    }
+
+    private void addCurrentTrack(Guild guild, Member member, String playlistName,
+                                 OutputAdapter output, boolean favorites)
+    {
+        if (!requireDJPermission(guild, member, output,
+                favorites ? "add the current track to favorites" : "add the current track to a playlist"))
         {
             return;
         }
@@ -66,20 +79,37 @@ public class FavoritesService
             return;
         }
 
-        String favoriteEntry = currentTrack.getInfo().uri;
-        if (favoriteEntry == null || favoriteEntry.isBlank())
+        String entry = currentTrack.getInfo().uri;
+        if (entry == null || entry.isBlank())
         {
             output.replyError("The current track does not have a valid URI or absolute path to save.");
             return;
         }
-        if (!isSupportedFavoriteEntry(favoriteEntry))
+        if (!isSupportedFavoriteEntry(entry))
         {
-            output.replyError("Only URI references or absolute file paths for this OS can be added to favorites.");
+            output.replyError("Only URI references or absolute file paths for this OS can be added to playlists.");
             return;
         }
 
+        String sanitized = PlaylistLoader.sanitizeName(playlistName);
+        if (sanitized.isEmpty())
+        {
+            output.replyError("Please provide a valid playlist name!");
+            return;
+        }
+        if (!favorites)
+        {
+            PlaylistLoader.PlaylistResult<?> playlistResult =
+                    bot.getPlaylistLoader().getPlaylistResult(sanitized);
+            if (!playlistResult.isSuccess())
+            {
+                output.replyError(PlaylistErrorMessages.toMessage(playlistResult.getError()));
+                return;
+            }
+        }
+
         PlaylistLoader.PlaylistResult<PlaylistLoader.AppendIfAbsentResult> appendResult =
-                bot.getPlaylistLoader().appendItemIfAbsentResult(FAVORITES_PLAYLIST_NAME, favoriteEntry);
+                bot.getPlaylistLoader().appendItemIfAbsentResult(sanitized, entry);
         if (!appendResult.isSuccess())
         {
             output.replyError(PlaylistErrorMessages.toMessage(appendResult.getError()));
@@ -88,15 +118,31 @@ public class FavoritesService
 
         if (appendResult.getValue().getStatus() == PlaylistLoader.AppendIfAbsentStatus.ALREADY_PRESENT)
         {
-            handler.markCurrentTrackFavorited(favoriteEntry);
-            output.editNowPlaying(handler);
-            output.replyWarning("This track is already favorited");
+            if (favorites)
+            {
+                handler.markCurrentTrackFavorited(entry);
+                output.editNowPlaying(handler);
+                output.replyWarning("This track is already favorited");
+            }
+            else
+            {
+                output.replyWarning("This track is already in playlist `" + sanitized + "`");
+            }
             return;
         }
 
-        handler.markCurrentTrackFavorited(favoriteEntry);
-        output.editNowPlaying(handler);
-        output.replySuccess("Added " + FormatUtil.filter(FormatUtil.getTrackTitle(currentTrack)) + " to Favorites");
+        if (favorites)
+        {
+            handler.markCurrentTrackFavorited(entry);
+            output.editNowPlaying(handler);
+            output.replySuccess("Added " + FormatUtil.filter(FormatUtil.getTrackTitle(currentTrack))
+                    + " to Favorites");
+        }
+        else
+        {
+            output.replySuccess("Added " + FormatUtil.filter(FormatUtil.getTrackTitle(currentTrack))
+                    + " to playlist `" + sanitized + "`");
+        }
     }
 
     private AudioHandler getHandler(Guild guild)

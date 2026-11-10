@@ -55,9 +55,10 @@ class PlaylistSlashCmdTest
     void exposesExpectedSubcommands()
     {
         assertEquals("playlist", command.getName());
-        assertEquals(5, children.size());
+        assertEquals(7, children.size());
         assertTrue(children.keySet().containsAll(
-                java.util.List.of("view", "append", "remove", "move", "replace")));
+                java.util.List.of("view", "append", "addcurrent", "rename",
+                        "remove", "move", "replace")));
     }
 
     @Test
@@ -66,18 +67,20 @@ class PlaylistSlashCmdTest
     {
         SlashCommandData data = (SlashCommandData) command.buildCommandData();
 
-        assertEquals(5, data.getSubcommands().size());
+        assertEquals(7, data.getSubcommands().size());
         assertTrue(data.getSubcommands().stream()
                 .map(subcommand -> subcommand.getName())
                 .toList()
-                .containsAll(java.util.List.of("view", "append", "remove", "move", "replace")));
+                .containsAll(java.util.List.of("view", "append", "addcurrent",
+                        "rename", "remove", "move", "replace")));
     }
 
     @Test
     @DisplayName("editing subcommands are not owner-only")
     void editingSubcommandsAreNotOwnerOnly()
     {
-        for (String name : new String[]{"view", "append", "remove", "move", "replace"})
+        for (String name : new String[]{"view", "append", "addcurrent", "rename",
+                "remove", "move", "replace"})
         {
             SlashCommand child = children.get(name);
             assertNotNull(child);
@@ -104,6 +107,9 @@ class PlaylistSlashCmdTest
     void editingOptionsAreCorrect()
     {
         assertTrue(option(children.get("append"), "urls").isRequired());
+        assertTrue(option(children.get("addcurrent"), "name").isRequired());
+        assertTrue(option(children.get("rename"), "old").isRequired());
+        assertTrue(option(children.get("rename"), "new").isRequired());
         assertTrue(option(children.get("remove"), "position").isRequired());
         assertTrue(option(children.get("move"), "from").isRequired());
         assertTrue(option(children.get("move"), "to").isRequired());

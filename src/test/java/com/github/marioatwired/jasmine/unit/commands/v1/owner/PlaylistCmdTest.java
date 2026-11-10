@@ -65,7 +65,8 @@ class PlaylistCmdTest
     @DisplayName("view and editing subcommands are available to DJs")
     void editingSubcommandsAreNotOwnerOnly()
     {
-        for (String name : new String[]{"all", "view", "append", "remove", "move", "replace"})
+        for (String name : new String[]{"all", "view", "append", "addcurrent",
+                "rename", "remove", "move", "replace"})
         {
             Command child = children.get(name);
             assertNotNull(child, "Missing subcommand: " + name);
