@@ -19,6 +19,7 @@ import com.github.marioatwired.jasmine.BaseConfigTest;
 import com.github.marioatwired.jasmine.config.io.ConfigIO;
 import com.typesafe.config.Config;
 import com.typesafe.config.parser.ConfigDocument;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -124,6 +126,23 @@ class ConfigIOTest extends BaseConfigTest {
             assertFalse(writtenContent.contains("old content"));
         }
         
+        @Test
+        @DisplayName("writeConfigFile() replaces a read-only file through the atomic fallback")
+        void writeConfigFileReplacesReadOnlyFile() throws IOException {
+            Path testFile = tempDir.resolve("readonly-config.conf");
+            Files.writeString(testFile, "old content");
+            try {
+                Files.setPosixFilePermissions(testFile,
+                        PosixFilePermissions.fromString("r--r--r--"));
+            } catch (UnsupportedOperationException e) {
+                Assumptions.assumeTrue(false, "POSIX permissions are not supported");
+            }
+
+            ConfigIO.writeConfigFile(testFile, "new content");
+
+            assertEquals("new content", readFileContent(testFile));
+        }
+
         @Test
         @DisplayName("writeConfigFile() throws IOException for invalid path")
         void writeConfigFileThrowsIOExceptionForInvalidPath() {

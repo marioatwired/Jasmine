@@ -264,6 +264,30 @@ class ConfigDiagnosticsTest {
         }
         
         @Test
+        @DisplayName("does not flag user-defined command aliases as deprecated")
+        void testDetectDeprecatedKeys_userDefinedAliasNotDeprecated() {
+            Map<String, Object> userMap = new HashMap<>();
+            userMap.put("discord", Map.of("token", "test_token", "owner", 123456789L));
+            userMap.put("commands", Map.of(
+                    "aliases", Map.of("lyrics", java.util.List.of("lyrics"))
+            ));
+            Config migratedUserConfig = ConfigFactory.parseMap(userMap);
+
+            Map<String, Object> defaultMap = new HashMap<>();
+            defaultMap.put("discord", Map.of("token", "", "owner", 0L));
+            defaultMap.put("commands", Map.of(
+                    "aliases", Map.of("play", java.util.List.of())
+            ));
+            Config defaults = ConfigFactory.parseMap(defaultMap);
+            Config merged = migratedUserConfig.withFallback(defaults).resolve();
+
+            ConfigDiagnostics.Report report = ConfigDiagnostics.analyze(migratedUserConfig, merged, defaults);
+
+            assertFalse(report.getDeprecated().contains("commands.aliases.lyrics"),
+                    "Custom command aliases should not be flagged as deprecated");
+        }
+
+        @Test
         @DisplayName("does not flag multiple user-defined transforms as deprecated")
         void testDetectDeprecatedKeys_multipleTransformsNotDeprecated() {
             Map<String, Object> userMap = new HashMap<>();
