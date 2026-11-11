@@ -176,7 +176,8 @@ falls back to `AndroidVrWithThumbnail`, `MWebWithThumbnail`, and
 `fallbackClients = false` to use only the original TV clients.
 
 OAuth playback also uses the remote cipher service configured in
-`remoteCipherUrl`. Leave it empty to use the local cipher implementation. Set
+`remoteCipherUrl`. Leave it empty to use the local cipher implementation. Only
+`http` and `https` URLs are accepted; invalid values are ignored and logged. Set
 `remoteCipherPassword` and `remoteCipherUserAgent` when the service requires
 them.
 

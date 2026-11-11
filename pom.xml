@@ -410,6 +410,8 @@
                         <includes>
                             <include>**/unit/**/*Test.java</include>
                             <include>**/unit/**/*Tests.java</include>
+                            <!-- Package-private YouTube source tests live alongside the audio package. -->
+                            <include>**/audio/**/*Test.java</include>
                         </includes>
                     </configuration>
                 </plugin>
