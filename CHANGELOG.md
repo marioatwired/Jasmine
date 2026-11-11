@@ -19,6 +19,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Regression tests for playlist input parsing, append messages, and interaction
   ownership guards.
+- Deterministic YouTube source tests that no longer use reflection or trigger
+  real OAuth/network flows.
+
+### Fixed
+
+- Invalid `playback.youtube.remoteCipherUrl` values are now ignored and logged
+  instead of being passed to the YouTube source.
 
 ## [0.11.0] - 2026-11-11
 

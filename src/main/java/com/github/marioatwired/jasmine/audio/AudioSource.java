@@ -16,8 +16,10 @@
 package com.github.marioatwired.jasmine.audio;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -136,6 +138,8 @@ public enum AudioSource
         (manager, config) -> AudioSourceManagers.registerLocalSource(manager)
     );
 
+    private static final Logger LOG = LoggerFactory.getLogger(AudioSource.class);
+
     private final String configName;
     private final String description;
     private final int registrationPriority;
@@ -229,10 +233,8 @@ public enum AudioSource
      * @param config the bot configuration
      * @return the configured YouTube audio source manager
      */
-    private static YoutubeAudioSourceManager setupYoutubeAudioSourceManager(BotConfig config)
+    static YoutubeAudioSourceManager setupYoutubeAudioSourceManager(BotConfig config)
     {
-        final Logger logger = LoggerFactory.getLogger(AudioSource.class);
-        
         boolean useOauth = config.useYouTubeOauth();
         YoutubeSourceOptions options = buildYoutubeOptions(config);
         if (useOauth)
@@ -244,7 +246,7 @@ public enum AudioSource
 
         if (useOauth)
         {
-            applyOAuth(yt, logger);
+            applyOAuth(yt, LOG);
         }
         return yt;
     }
@@ -252,7 +254,7 @@ public enum AudioSource
     /**
      * Builds YouTube source options.
      */
-    private static YoutubeSourceOptions buildYoutubeOptions(BotConfig config)
+    static YoutubeSourceOptions buildYoutubeOptions(BotConfig config)
     {
         YoutubeSourceOptions options = new YoutubeSourceOptions()
                 .setAllowSearch(true)
@@ -264,16 +266,43 @@ public enum AudioSource
             String remoteCipherUrl = config.getYouTubeRemoteCipherUrl();
             if (remoteCipherUrl != null && !remoteCipherUrl.isBlank())
             {
-                String password = blankToNull(config.getYouTubeRemoteCipherPassword());
-                String userAgent = config.getYouTubeRemoteCipherUserAgent();
-                options.setRemoteCipher(
-                        remoteCipherUrl.trim(),
-                        password,
-                        userAgent == null || userAgent.isBlank() ? "jasmine" : userAgent.trim());
+                if (!isHttpUrl(remoteCipherUrl))
+                {
+                    LOG.warn("Ignoring invalid YouTube remote cipher URL: {}", remoteCipherUrl);
+                }
+                else
+                {
+                    String password = blankToNull(config.getYouTubeRemoteCipherPassword());
+                    String userAgent = config.getYouTubeRemoteCipherUserAgent();
+                    options.setRemoteCipher(
+                            remoteCipherUrl.trim(),
+                            password,
+                            userAgent == null || userAgent.isBlank() ? "jasmine" : userAgent.trim());
+                }
             }
         }
         
         return options;
+    }
+
+    static boolean isHttpUrl(String value)
+    {
+        if (value == null || value.isBlank())
+        {
+            return false;
+        }
+        try
+        {
+            URI uri = URI.create(value.trim());
+            String scheme = uri.getScheme();
+            return ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))
+                    && uri.getHost() != null
+                    && !uri.getHost().isBlank();
+        }
+        catch (IllegalArgumentException ex)
+        {
+            return false;
+        }
     }
 
     private static String blankToNull(String value)
@@ -289,7 +318,7 @@ public enum AudioSource
      *
      * @see <a href="https://github.com/lavalink-devs/youtube-source/issues/226">youtube-source#226</a>
      */
-    private static void applyTvUserAgentWorkaround()
+    static void applyTvUserAgentWorkaround()
     {
         Tv.BASE_CONFIG = Tv.BASE_CONFIG.copy()
                 .withUserAgent("Mozilla/5.0 (PlayStation; PlayStation 4/12.00)");
@@ -315,7 +344,7 @@ public enum AudioSource
      * the non-OAuth clients. The fallback clients are duplicate instances because the
      * client options are per-instance.
      */
-    private static Client[] buildYoutubeClients(boolean useOauth, boolean includeFallbackClients)
+    static Client[] buildYoutubeClients(boolean useOauth, boolean includeFallbackClients)
     {
         if (useOauth)
         {
@@ -354,9 +383,13 @@ public enum AudioSource
      * Reads OAuth token and applies it to the YouTube source manager.
      * If no token exists, triggers the OAuth device flow to obtain one.
      */
-    private static void applyOAuth(YoutubeAudioSourceManager yt, Logger logger)
+    static void applyOAuth(YoutubeAudioSourceManager yt, Logger logger)
     {
-        String token = readOAuthToken(logger);
+        applyOAuth(yt, readOAuthToken(logger), logger);
+    }
+
+    static void applyOAuth(YoutubeAudioSourceManager yt, String token, Logger logger)
+    {
         if (token != null)
         {
             logger.debug("Read YouTube OAuth2 refresh token from youtubetoken.txt");
@@ -380,11 +413,16 @@ public enum AudioSource
      * 
      * @return the token, or null if file doesn't exist or read failed
      */
-    private static String readOAuthToken(Logger logger)
+    static String readOAuthToken(Logger logger)
+    {
+        return readOAuthToken(OtherUtil.getPath("youtubetoken.txt"), logger);
+    }
+
+    static String readOAuthToken(Path tokenPath, Logger logger)
     {
         try
         {
-            return Files.readString(OtherUtil.getPath("youtubetoken.txt"));
+            return Files.readString(tokenPath);
         }
         catch (NoSuchFileException e)
         {
