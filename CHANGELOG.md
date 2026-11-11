@@ -22,6 +22,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   Actions dependencies.
 - The Maven wrapper distribution is verified with a SHA-256 checksum.
 
+### Security
+
+- Updated commons-io to 2.22.0 to resolve CVE-2024-47554, reported by the new
+  Trivy image scan.
+
 ## [0.10.0] - 2026-11-11
 
 ### Added

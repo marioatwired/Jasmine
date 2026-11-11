@@ -155,6 +155,12 @@
                 <artifactId>lava-common</artifactId>
                 <version>${lava-common.version}</version>
             </dependency>
+            <!-- commons-io - override lavaplayer's 2.13.0; CVE-2024-47554 fixed in 2.14.0 -->
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -595,6 +601,7 @@
         <org-json.version>20260814</org-json.version>
         <rhino-engine.version>1.9.2</rhino-engine.version>
         <lava-common.version>2.2.7</lava-common.version>
+        <commons-io.version>2.22.0</commons-io.version>
 
         <!-- Plugin versions -->
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
