@@ -16,8 +16,12 @@ command -v jq >/dev/null 2>&1 || fail "jq is required"
 command -v docker >/dev/null 2>&1 || fail "docker is required"
 
 echo "==> Verifying manifest platforms for $image"
-platforms="$(docker buildx imagetools inspect "$image" \
-    --format '{{range .Manifests}}{{.Platform}}{{"\n"}}{{end}}')"
+manifest="$(docker buildx imagetools inspect "$image" --format '{{json .Manifest}}')" \
+    || fail "could not inspect image manifest"
+jq -e '.manifests | length > 0' <<< "$manifest" >/dev/null \
+    || fail "image is not a multi-platform manifest list"
+
+platforms="$(jq -r '.manifests[]? | select(.platform != null) | "\(.platform.os)/\(.platform.architecture)"' <<< "$manifest")"
 for platform in linux/amd64 linux/arm64; do
     grep -qx "$platform" <<< "$platforms" \
         || fail "missing $platform manifest in $image"
