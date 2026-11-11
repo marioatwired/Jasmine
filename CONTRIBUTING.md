@@ -18,7 +18,7 @@ Requirements:
 ```bash
 mvn clean verify
 mvn package
-java -Dnogui=true --enable-native-access=ALL-UNNAMED -jar target/jasmine-0.11.0-All.jar
+java -Dnogui=true --enable-native-access=ALL-UNNAMED -jar target/jasmine-0.11.1-All.jar
 ```
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full workflow.
