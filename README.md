@@ -116,6 +116,24 @@ For Docker secrets, point Jasmine at files instead:
 
 Environment values override `config.txt`. Prefer `*_FILE` secrets when the token must not appear in `docker inspect` or the Compose file.
 
+### Verify the Docker image
+
+Published images include an SPDX SBOM and SLSA provenance attestation. You can
+inspect them without pulling the image:
+
+```bash
+docker buildx imagetools inspect \
+  ghcr.io/marioatwired/jasmine:latest \
+  --format '{{ json (index .Provenance "linux/amd64").SLSA }}'
+
+docker buildx imagetools inspect \
+  ghcr.io/marioatwired/jasmine:latest \
+  --format '{{ json (index .SBOM "linux/amd64").SPDX }}'
+```
+
+The image index also includes `linux/arm64`. Change the platform argument if
+you need the arm64 attestations.
+
 ## Playlist management
 
 Saved playlists can be viewed and edited from Discord:

@@ -1,6 +1,7 @@
 # Build output
 /target/
 /dependency-reduced-pom.xml
+/trivy-results.sarif
 
 # Runtime data
 /config.txt

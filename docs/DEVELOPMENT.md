@@ -167,9 +167,10 @@ The package rename means most upstream patches will need manual adaptation.
    on older commits.
 
 6. The `Release` workflow builds `Jasmine-0.10.0.jar`, runs the packaged-JAR
-   smoke test, generates the SHA-256 checksum, creates the GitHub release,
-   verifies the published Docker manifest, and publishes
-   `ghcr.io/marioatwired/jasmine:0.10.0` and `:latest`.
+   smoke test, generates the SHA-256 checksum, scans the image with Trivy,
+   creates the GitHub release, verifies the published Docker manifest, SBOM,
+   and provenance, and publishes `ghcr.io/marioatwired/jasmine:0.10.0` and
+   `:latest`.
 7. Download the release JAR and checksum, then verify them before announcing
    the release.
 
@@ -189,3 +190,15 @@ macOS JDave/udpqueue native libraries. The runtime image is multi-arch.
 CI and release workflows run `scripts/smoke-test-docker.sh` against a locally
 built image before publishing. It verifies first-run `config.txt` generation and
 startup with `JASMINE_TOKEN` / `JASMINE_OWNER`.
+
+Docker base images and GitHub Actions are pinned to immutable digests/commits.
+Dependabot updates both the Maven dependencies and those pins. The Maven wrapper
+distribution is verified with a SHA-256 checksum. CI scans the image with Trivy
+and publishes HIGH/CRITICAL findings to the repository security tab. Release
+builds attach an SPDX SBOM and SLSA provenance attestation, and
+`scripts/verify-image-attestations.sh` checks both platforms before the release
+is created:
+
+```bash
+bash scripts/verify-image-attestations.sh ghcr.io/marioatwired/jasmine:latest
+```
