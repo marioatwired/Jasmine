@@ -42,7 +42,7 @@ connecting and speaking in voice, and changing its nickname.
 With the release JAR:
 
 ```bash
-java -jar Jasmine-0.10.0.jar generate-config
+java -jar Jasmine-0.11.0.jar generate-config
 ```
 
 Or start the bot once; it creates `config.txt` if it is missing.
@@ -61,19 +61,19 @@ See [CONFIG.md](CONFIG.md) for every section.
 ## Run Jasmine
 
 ```bash
-java -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar Jasmine-0.10.0.jar
+java -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar Jasmine-0.11.0.jar
 ```
 
 Headless server:
 
 ```bash
-java -Dfile.encoding=UTF-8 -Dnogui=true --enable-native-access=ALL-UNNAMED -jar Jasmine-0.10.0.jar
+java -Dfile.encoding=UTF-8 -Dnogui=true --enable-native-access=ALL-UNNAMED -jar Jasmine-0.11.0.jar
 ```
 
 Windows PowerShell:
 
 ```powershell
-java "-Dfile.encoding=UTF-8" "-Dnogui=true" "--enable-native-access=ALL-UNNAMED" "-jar" ".\Jasmine-0.10.0.jar"
+java "-Dfile.encoding=UTF-8" "-Dnogui=true" "--enable-native-access=ALL-UNNAMED" "-jar" ".\Jasmine-0.11.0.jar"
 ```
 
 The default prefix is `@mention`. Mention the bot followed by `help`, or use the
