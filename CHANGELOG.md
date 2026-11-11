@@ -5,6 +5,21 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Playlist append input parsing and result messages are now shared between
+  text and slash commands, with correct singular/plural wording.
+- Interaction ownership checks now use a shared guard with consistent wording.
+- Slash playlist editing commands now distinguish server-only usage from
+  missing DJ permissions.
+
+### Added
+
+- Regression tests for playlist input parsing, append messages, and interaction
+  ownership guards.
+
 ## [0.11.0] - 2026-11-11
 
 ### Added

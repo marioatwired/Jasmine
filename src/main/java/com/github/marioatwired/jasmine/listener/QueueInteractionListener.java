@@ -73,8 +73,7 @@ public class QueueInteractionListener extends ListenerAdapter {
         }
         ComponentIdParsers.PaginatedButtonId id = parsed.get();
 
-        if (event.getUser().getIdLong() != id.userId()) {
-            event.reply("Only the user who ran the command can use these buttons!").setEphemeral(true).queue();
+        if (!InteractionGuards.requireSameUser(event, id.userId())) {
             return;
         }
 
@@ -212,8 +211,7 @@ public class QueueInteractionListener extends ListenerAdapter {
         }
         ComponentIdParsers.QueueMoveSelectId id = parsed.get();
 
-        if (event.getUser().getIdLong() != id.userId()) {
-            event.reply("Only the user who ran the command can use this!").setEphemeral(true).queue();
+        if (!InteractionGuards.requireSameUser(event, id.userId())) {
             return;
         }
 

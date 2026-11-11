@@ -90,9 +90,8 @@ public class PlaylistsInteractionListener extends ListenerAdapter
         if (parsedBack.isPresent())
         {
             ComponentIdParsers.PlaylistDetailsBackId backId = parsedBack.get();
-            if (event.getUser().getIdLong() != backId.userId())
+            if (!InteractionGuards.requireSameUser(event, backId.userId()))
             {
-                event.reply("Only the user who ran the command can use these buttons!").setEphemeral(true).queue();
                 return;
             }
             PlaylistNamesInfo namesInfo = loadPlaylistNames();
@@ -119,9 +118,8 @@ public class PlaylistsInteractionListener extends ListenerAdapter
             return;
         }
         ComponentIdParsers.PlaylistDetailsButtonId id = parsed.get();
-        if (event.getUser().getIdLong() != id.userId())
+        if (!InteractionGuards.requireSameUser(event, id.userId()))
         {
-            event.reply("Only the user who ran the command can use these buttons!").setEphemeral(true).queue();
             return;
         }
 
@@ -374,9 +372,8 @@ public class PlaylistsInteractionListener extends ListenerAdapter
             return;
         }
         ComponentIdParsers.PlaylistDetailsMoveSelectId id = parsed.get();
-        if (event.getUser().getIdLong() != id.userId())
+        if (!InteractionGuards.requireSameUser(event, id.userId()))
         {
-            event.reply("Only the user who ran the command can use this!").setEphemeral(true).queue();
             return;
         }
 
@@ -437,9 +434,8 @@ public class PlaylistsInteractionListener extends ListenerAdapter
             return;
         }
         ComponentIdParsers.PaginatedButtonId id = parsed.get();
-        if (event.getUser().getIdLong() != id.userId())
+        if (!InteractionGuards.requireSameUser(event, id.userId()))
         {
-            event.reply("Only the user who ran the command can use these buttons!").setEphemeral(true).queue();
             return;
         }
 

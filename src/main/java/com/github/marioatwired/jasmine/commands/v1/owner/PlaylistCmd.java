@@ -18,9 +18,11 @@ package com.github.marioatwired.jasmine.commands.v1.owner;
 import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.github.marioatwired.jasmine.Bot;
+import com.github.marioatwired.jasmine.commands.PlaylistCommandMessages;
 import com.github.marioatwired.jasmine.commands.v1.OwnerCommand;
 import com.github.marioatwired.jasmine.commands.v1.TextOutputAdapters.SimpleOutputAdapter;
 import com.github.marioatwired.jasmine.commands.v2.music.PlaylistViewSupport;
+import com.github.marioatwired.jasmine.playlist.PlaylistInputParser;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
 import com.github.marioatwired.jasmine.service.PlaylistTransferService;
 import com.github.marioatwired.jasmine.service.dto.PlaylistMutationResult;
@@ -32,7 +34,6 @@ import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -204,20 +205,7 @@ public class PlaylistCmd extends Command
                 return;
             }
             String pname = PlaylistLoader.sanitizeName(parts[0]);
-            List<String> items = new ArrayList<>();
-            for(String url: parts[1].split("\\|"))
-            {
-                String item = url.trim();
-                if(item.startsWith("<") && item.endsWith(">"))
-                    item = item.substring(1, item.length()-1);
-                if(!item.isEmpty())
-                    items.add(item);
-            }
-            if(items.isEmpty())
-            {
-                event.replyError("Please include at least one URL to add!");
-                return;
-            }
+            List<String> items = PlaylistInputParser.parsePipeSeparated(parts[1]);
 
             PlaylistMutationResult result = bot.getMusicService()
                     .appendPlaylistItems(pname, items);
@@ -228,15 +216,10 @@ public class PlaylistCmd extends Command
             }
             if(result.addedItems == 0)
             {
-                event.replyWarning("All "+result.duplicateItems
-                        +" item(s) are already in playlist `"+pname+"`.");
+                event.replyWarning(PlaylistCommandMessages.allDuplicates(pname, result.duplicateItems));
                 return;
             }
-            String message = "Successfully added "+result.addedItems
-                    +" item(s) to playlist `"+pname+"`!";
-            if(result.duplicateItems > 0)
-                message += " "+result.duplicateItems+" duplicate(s) skipped.";
-            event.replySuccess(message);
+            event.replySuccess(PlaylistCommandMessages.appendSummary(pname, result));
         }
     }
 
