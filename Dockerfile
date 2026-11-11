@@ -1,8 +1,9 @@
-# syntax=docker/dockerfile:1.12
+# syntax=docker/dockerfile:1.12@sha256:93bfd3b68c109427185cd78b4779fc82b484b0b7618e36d0f104d4d801e66d25
 
-# Multi-stage build for Jasmine
+# Multi-stage build for Jasmine.
+# Base images are pinned to immutable digests. Dependabot updates them.
 # Stage 1: Build the application
-FROM maven:3.9.12-eclipse-temurin-25-alpine AS builder
+FROM maven:3.9.12-eclipse-temurin-25-alpine@sha256:91fbbf32cc5076b6142ed98405f3a1a21e102d876eafa5eaf359b5591e8e3fd8 AS builder
 
 ARG BUILD_TIMESTAMP
 ENV BUILD_TIMESTAMP=$BUILD_TIMESTAMP
@@ -31,7 +32,7 @@ RUN --mount=type=cache,target=/root/.m2/repository \
 
 # Stage 2: Create custom minimal JRE using jlink
 # Using noble (Ubuntu 24.04) for glibc 2.39 compatibility with native libraries
-FROM eclipse-temurin:25-jdk-noble AS jre-builder
+FROM eclipse-temurin:25-jdk-noble@sha256:95e350ad1eb738f943e141640f7e3d797e483359a3b33c3864255bfd1ad71f8a AS jre-builder
 
 # Create a minimal JRE with only the modules Jasmine needs
 # Modules determined by: jdeps --print-module-deps --ignore-missing-deps <jar>
@@ -60,7 +61,7 @@ RUN $JAVA_HOME/bin/jlink \
 # Stage 3: Runtime image
 # Using Bitnami minideb:trixie (Debian 13) for minimal size with glibc 2.41
 # Required for jdave/udpqueue native libraries which need glibc >= 2.38
-FROM bitnami/minideb:trixie
+FROM bitnami/minideb:trixie@sha256:7e02677d255280f9bcdf4fe057f0a17abbc6e55ba33c9ac5e599fba425dc51ff
 
 # OCI image labels for better traceability and management
 LABEL org.opencontainers.image.title="Jasmine" \

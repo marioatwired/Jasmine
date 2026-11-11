@@ -30,3 +30,10 @@ a fix and a coordinated disclosure before publishing details.
 
 Never commit a Discord bot token, OAuth refresh token, proxy credentials, or
 `config.txt`. The repository ignores runtime configuration files by default.
+
+## Supply chain
+
+Docker base images and GitHub Actions are pinned to immutable digests or commits
+and updated through Dependabot. Container images are scanned with Trivy, and
+releases include SPDX SBOM and SLSA provenance attestations in the GHCR image
+index. See `docs/SETUP.md` for commands to inspect the attestations.

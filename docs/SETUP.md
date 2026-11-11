@@ -110,6 +110,23 @@ cp docker-compose.example.yml docker-compose.yml
 docker compose up -d
 ```
 
+### Verify the Docker image
+
+Release images include an SPDX SBOM and SLSA provenance attestation. Inspect
+them without pulling the image:
+
+```bash
+docker buildx imagetools inspect \
+  ghcr.io/marioatwired/jasmine:latest \
+  --format '{{ json (index .Provenance "linux/amd64").SLSA }}'
+
+docker buildx imagetools inspect \
+  ghcr.io/marioatwired/jasmine:latest \
+  --format '{{ json (index .SBOM "linux/amd64").SPDX }}'
+```
+
+Use `linux/arm64` instead of `linux/amd64` for the arm64 attestations.
+
 ### Configure Docker without editing config.txt
 
 Set these environment variables in Compose, ZimaOS/CasaOS, Portainer, or your

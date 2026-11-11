@@ -5,6 +5,23 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- CI now scans the Docker image with Trivy and publishes HIGH/CRITICAL SARIF
+  results to the repository security tab.
+- Release images now include an SPDX SBOM and SLSA provenance attestation, and
+  the release workflow verifies both before publishing.
+- Added `scripts/verify-image-attestations.sh` for local verification.
+
+### Changed
+
+- Docker base images and GitHub Actions are pinned to immutable digests/commits.
+- Dependabot now updates Docker base images in addition to Maven and GitHub
+  Actions dependencies.
+- The Maven wrapper distribution is verified with a SHA-256 checksum.
+
 ## [0.10.0] - 2026-11-11
 
 ### Added
