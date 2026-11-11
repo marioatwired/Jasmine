@@ -75,9 +75,9 @@ public class SettingsInteractionListener extends ListenerAdapter
             return;
         }
         ComponentIdParsers.SettingsButtonId id = parsed.get();
-        if (event.getUser().getIdLong() != id.userId())
+        if (!InteractionGuards.requireSameUser(event, id.userId(),
+                "Only the user who opened this settings panel can use it."))
         {
-            event.reply("Only the user who opened this settings panel can use it.").setEphemeral(true).queue();
             return;
         }
         if (!hasSettingsPermission(event.getMember(), event.getUser().getIdLong()))
@@ -204,9 +204,9 @@ public class SettingsInteractionListener extends ListenerAdapter
         }
 
         ComponentIdParsers.SettingsModalId id = parsed.get();
-        if (event.getUser().getIdLong() != id.userId())
+        if (!InteractionGuards.requireSameUser(event, id.userId(),
+                "Only the user who opened this settings dialog can submit it."))
         {
-            event.reply("Only the user who opened this settings dialog can submit it.").setEphemeral(true).queue();
             return;
         }
         if (!hasSettingsPermission(event.getMember(), event.getUser().getIdLong()))
@@ -248,9 +248,9 @@ public class SettingsInteractionListener extends ListenerAdapter
         }
 
         ComponentIdParsers.SettingsEntitySelectId id = parsed.get();
-        if (event.getUser().getIdLong() != id.userId())
+        if (!InteractionGuards.requireSameUser(event, id.userId(),
+                "Only the user who opened this settings panel can use it."))
         {
-            event.reply("Only the user who opened this settings panel can use it.").setEphemeral(true).queue();
             return;
         }
         if (!hasSettingsPermission(event.getMember(), event.getUser().getIdLong()))

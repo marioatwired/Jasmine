@@ -18,14 +18,15 @@ package com.github.marioatwired.jasmine.commands.v2.music;
 import com.jagrosh.jdautilities.command.SlashCommand;
 import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.github.marioatwired.jasmine.Bot;
+import com.github.marioatwired.jasmine.commands.PlaylistCommandMessages;
 import com.github.marioatwired.jasmine.commands.v2.SlashOutputAdapters.SlashEventOutputAdapter;
+import com.github.marioatwired.jasmine.playlist.PlaylistInputParser;
 import com.github.marioatwired.jasmine.playlist.PlaylistLoader;
 import com.github.marioatwired.jasmine.service.dto.PlaylistMutationResult;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -73,8 +74,14 @@ public class PlaylistSlashCmd extends SlashCommand
         @Override
         protected void execute(SlashCommandEvent event)
         {
-            if (event.getGuild() == null || event.getMember() == null
-                    || !bot.getMusicService().canEditPlaylistEntries(event.getGuild(), event.getMember()))
+            if (event.getGuild() == null || event.getMember() == null)
+            {
+                event.reply(event.getClient().getError() + " This command can only be used in a server.")
+                        .setEphemeral(true)
+                        .queue();
+                return;
+            }
+            if (!bot.getMusicService().canEditPlaylistEntries(event.getGuild(), event.getMember()))
             {
                 event.reply(event.getClient().getError()
                         + " You need to be a DJ or the bot owner to edit playlists!")
@@ -167,19 +174,8 @@ public class PlaylistSlashCmd extends SlashCommand
                 return;
             }
 
-            List<String> items = new ArrayList<>();
-            for (String value : event.getOption("urls").getAsString().split("\\|"))
-            {
-                String item = value.trim();
-                if (item.startsWith("<") && item.endsWith(">"))
-                {
-                    item = item.substring(1, item.length() - 1);
-                }
-                if (!item.isEmpty())
-                {
-                    items.add(item);
-                }
-            }
+            List<String> items = PlaylistInputParser.parsePipeSeparated(
+                    event.getOption("urls").getAsString());
 
             PlaylistMutationResult result = bot.getMusicService()
                     .appendPlaylistItems(name, items);
@@ -190,18 +186,13 @@ public class PlaylistSlashCmd extends SlashCommand
             }
             if (result.addedItems == 0)
             {
-                event.reply(event.getClient().getWarning() + " All " + result.duplicateItems
-                        + " item(s) are already in playlist `" + name + "`.")
+                event.reply(event.getClient().getWarning() + " "
+                        + PlaylistCommandMessages.allDuplicates(name, result.duplicateItems))
                         .setEphemeral(true)
                         .queue();
                 return;
             }
-            String message = "Added " + result.addedItems + " item(s) to playlist `" + name + "`.";
-            if (result.duplicateItems > 0)
-            {
-                message += " " + result.duplicateItems + " duplicate(s) skipped.";
-            }
-            replyResult(event, result, message);
+            replyResult(event, result, PlaylistCommandMessages.appendSummary(name, result));
         }
     }
 

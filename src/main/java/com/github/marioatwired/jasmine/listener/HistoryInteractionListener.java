@@ -78,8 +78,7 @@ public class HistoryInteractionListener extends ListenerAdapter {
         }
         ComponentIdParsers.PaginatedButtonId id = parsed.get();
 
-        if (event.getUser().getIdLong() != id.userId()) {
-            event.reply("Only the user who ran the command can use these buttons!").setEphemeral(true).queue();
+        if (!InteractionGuards.requireSameUser(event, id.userId())) {
             return;
         }
 
@@ -226,8 +225,8 @@ public class HistoryInteractionListener extends ListenerAdapter {
         }
         long userId = userIdOpt.get();
 
-        if (event.getUser().getIdLong() != userId) {
-            event.reply("Only the user who opened the save dialog can submit it!").setEphemeral(true).queue();
+        if (!InteractionGuards.requireSameUser(event, userId,
+                "Only the user who opened the save dialog can submit it!")) {
             return;
         }
 

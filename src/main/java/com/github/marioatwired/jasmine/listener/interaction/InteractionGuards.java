@@ -30,6 +30,9 @@ import net.dv8tion.jda.api.exceptions.PermissionException;
  */
 public final class InteractionGuards {
 
+    private static final String USER_MISMATCH_MESSAGE =
+            "Only the user who ran the command can use this interaction!";
+
     private InteractionGuards() {
     }
 
@@ -63,6 +66,74 @@ public final class InteractionGuards {
 
     private static boolean requireGuildAndMemberImpl(net.dv8tion.jda.api.entities.Guild guild, net.dv8tion.jda.api.entities.Member member, Runnable sendError) {
         if (guild == null || member == null) {
+            sendError.run();
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Ensures the interaction belongs to the user who originally invoked the command.
+     */
+    public static boolean requireSameUser(ButtonInteractionEvent event, long userId) {
+        return requireSameUser(event, userId, USER_MISMATCH_MESSAGE);
+    }
+
+    /**
+     * Ensures the interaction belongs to the expected user, with a custom error message.
+     */
+    public static boolean requireSameUser(ButtonInteractionEvent event, long userId, String message) {
+        return requireSameUserImpl(event.getUser().getIdLong(), userId,
+                () -> event.reply(message).setEphemeral(true).queue());
+    }
+
+    /**
+     * Ensures the interaction belongs to the user who originally invoked the command.
+     */
+    public static boolean requireSameUser(StringSelectInteractionEvent event, long userId) {
+        return requireSameUser(event, userId, USER_MISMATCH_MESSAGE);
+    }
+
+    /**
+     * Ensures the interaction belongs to the expected user, with a custom error message.
+     */
+    public static boolean requireSameUser(StringSelectInteractionEvent event, long userId, String message) {
+        return requireSameUserImpl(event.getUser().getIdLong(), userId,
+                () -> event.reply(message).setEphemeral(true).queue());
+    }
+
+    /**
+     * Ensures the interaction belongs to the user who originally invoked the command.
+     */
+    public static boolean requireSameUser(ModalInteractionEvent event, long userId) {
+        return requireSameUser(event, userId, USER_MISMATCH_MESSAGE);
+    }
+
+    /**
+     * Ensures the interaction belongs to the expected user, with a custom error message.
+     */
+    public static boolean requireSameUser(ModalInteractionEvent event, long userId, String message) {
+        return requireSameUserImpl(event.getUser().getIdLong(), userId,
+                () -> event.reply(message).setEphemeral(true).queue());
+    }
+
+    /**
+     * Ensures the interaction belongs to the user who originally invoked the command.
+     */
+    public static boolean requireSameUser(EntitySelectInteractionEvent event, long userId) {
+        return requireSameUser(event, userId, USER_MISMATCH_MESSAGE);
+    }
+
+    /**
+     * Ensures the interaction belongs to the expected user, with a custom error message.
+     */
+    public static boolean requireSameUser(EntitySelectInteractionEvent event, long userId, String message) {
+        return requireSameUserImpl(event.getUser().getIdLong(), userId,
+                () -> event.reply(message).setEphemeral(true).queue());
+    }
+
+    private static boolean requireSameUserImpl(long actualUserId, long expectedUserId, Runnable sendError) {
+        if (actualUserId != expectedUserId) {
             sendError.run();
             return false;
         }
