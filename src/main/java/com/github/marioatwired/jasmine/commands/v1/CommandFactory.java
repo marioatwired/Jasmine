@@ -21,6 +21,7 @@ import com.github.marioatwired.jasmine.commands.v2.admin.SettingsSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.SettcSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.SetvcSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.SkipratioSlashCmd;
+import com.github.marioatwired.jasmine.commands.v2.dj.ClearSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.dj.ForceskipSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.dj.ForceremoveSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.dj.MovetrackSlashCmd;
@@ -84,6 +85,7 @@ public class CommandFactory {
                     new RepeatCmd(bot),
                     new SkiptoCmd(bot),
                     new StopCmd(bot),
+                    new ClearCmd(bot),
                     new VolumeCmd(bot),
 
                     new PrefixCmd(bot),
@@ -128,6 +130,7 @@ public class CommandFactory {
                     new RepeatSlashCmd(bot),
                     new SkiptoSlashCmd(bot),
                     new StopSlashCmd(bot),
+                    new ClearSlashCmd(bot),
                     new VolumeSlashCmd(bot),
 
                     // Admin commands

@@ -190,6 +190,20 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
         audioPlayer.stopTrack();
     }
 
+    /**
+     * Clears pending tracks without interrupting the currently playing track.
+     *
+     * @return number of tracks removed from the active queue
+     */
+    public int clearQueue()
+    {
+        int removed = queue.size();
+        queue.clear();
+        defaultQueue.clear();
+        LOGGER.debug("Cleared {} queued track(s) without stopping playback", removed);
+        return removed;
+    }
+
     public boolean isMusicPlaying(JDA jda)
     {
         // Check that the selfMember is connected to a channel where they can receive audio
