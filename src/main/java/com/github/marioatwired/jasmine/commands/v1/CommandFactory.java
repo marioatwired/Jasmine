@@ -11,6 +11,7 @@ import com.github.marioatwired.jasmine.commands.v1.dj.*;
 import com.github.marioatwired.jasmine.commands.v1.general.SettingsCmd;
 import com.github.marioatwired.jasmine.commands.v1.music.*;
 import com.github.marioatwired.jasmine.commands.v1.owner.*;
+import com.github.marioatwired.jasmine.commands.v2.admin.ClearSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.ClearchannelSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.NpButtonsSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.NpLayoutSlashCmd;
@@ -94,6 +95,7 @@ public class CommandFactory {
                     new SkipratioCmd(bot),
                     new SettcCmd(bot),
                     new SetvcCmd(bot),
+                    new ClearCmd(bot),
 
                     new AutoplaylistCmd(bot),
                     new DebugCmd(bot),
@@ -140,6 +142,7 @@ public class CommandFactory {
                     new SetvcSlashCmd(bot),
                     new SkipratioSlashCmd(bot),
                     new SettingsSlashCmd(bot),
+                    new ClearSlashCmd(bot),
                     // Owner commands
                     new ClearchannelSlashCmd(bot)
             ).setManualUpsert(true);

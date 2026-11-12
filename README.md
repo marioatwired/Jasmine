@@ -23,6 +23,7 @@
 - Slash commands and classic text commands.
 - A desktop GUI with a console, queue timeline, source health, and performance panels.
 - Per-guild settings, DJ role, custom prefix, and queue types (linear or fair).
+- Message cleanup with `/clear` and `!clear` for the current channel; the owner-only `clearchannel` clears the channel configured with `settc`.
 - Playlists with paginated viewing, interactive editing, and DJ/owner controls.
 - Import and export playlists as portable `.txt` attachments (`playlist import <name>` with a file attached; `playlist export <name>`).
 - Queue, current-track, and playback-history restoration across bot restarts.
