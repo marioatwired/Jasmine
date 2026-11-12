@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (must match pom.xml, e.g. 0.11.1)'
+        description: 'Version to release (must match pom.xml, e.g. 0.11.2)'
         required: true
         type: string
 
