@@ -324,6 +324,14 @@ public class MusicService
     }
 
     /**
+     * Clears pending tracks without stopping the currently playing track.
+     */
+    public void clearQueue(Guild guild, Member member, OutputAdapter output)
+    {
+        queueService.clearQueue(guild, member, output);
+    }
+
+    /**
      * Removes all tracks from a specific user (for DJ force remove).
      *
      * @param guild  The guild

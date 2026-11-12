@@ -11,7 +11,6 @@ import com.github.marioatwired.jasmine.commands.v1.dj.*;
 import com.github.marioatwired.jasmine.commands.v1.general.SettingsCmd;
 import com.github.marioatwired.jasmine.commands.v1.music.*;
 import com.github.marioatwired.jasmine.commands.v1.owner.*;
-import com.github.marioatwired.jasmine.commands.v2.admin.ClearSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.ClearchannelSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.NpButtonsSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.NpLayoutSlashCmd;
@@ -22,6 +21,7 @@ import com.github.marioatwired.jasmine.commands.v2.admin.SettingsSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.SettcSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.SetvcSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.admin.SkipratioSlashCmd;
+import com.github.marioatwired.jasmine.commands.v2.dj.ClearSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.dj.ForceskipSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.dj.ForceremoveSlashCmd;
 import com.github.marioatwired.jasmine.commands.v2.dj.MovetrackSlashCmd;
@@ -85,6 +85,7 @@ public class CommandFactory {
                     new RepeatCmd(bot),
                     new SkiptoCmd(bot),
                     new StopCmd(bot),
+                    new ClearCmd(bot),
                     new VolumeCmd(bot),
 
                     new PrefixCmd(bot),
@@ -95,7 +96,6 @@ public class CommandFactory {
                     new SkipratioCmd(bot),
                     new SettcCmd(bot),
                     new SetvcCmd(bot),
-                    new ClearCmd(bot),
 
                     new AutoplaylistCmd(bot),
                     new DebugCmd(bot),
@@ -130,6 +130,7 @@ public class CommandFactory {
                     new RepeatSlashCmd(bot),
                     new SkiptoSlashCmd(bot),
                     new StopSlashCmd(bot),
+                    new ClearSlashCmd(bot),
                     new VolumeSlashCmd(bot),
 
                     // Admin commands
@@ -142,7 +143,6 @@ public class CommandFactory {
                     new SetvcSlashCmd(bot),
                     new SkipratioSlashCmd(bot),
                     new SettingsSlashCmd(bot),
-                    new ClearSlashCmd(bot),
                     // Owner commands
                     new ClearchannelSlashCmd(bot)
             ).setManualUpsert(true);

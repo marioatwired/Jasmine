@@ -13,46 +13,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.marioatwired.jasmine.unit.commands.v2.admin;
+package com.github.marioatwired.jasmine.unit.commands.v2.dj;
 
-import com.github.marioatwired.jasmine.commands.v2.admin.ClearSlashCmd;
+import com.github.marioatwired.jasmine.commands.v2.dj.ClearSlashCmd;
+import com.github.marioatwired.jasmine.service.MusicService;
+import com.github.marioatwired.jasmine.service.OutputAdapter;
 import com.github.marioatwired.jasmine.testutil.commands.SlashCommandTestFixture;
-import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.OptionData;
-import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
 @DisplayName("ClearSlashCmd Tests")
 class ClearSlashCmdTest
 {
+    private SlashCommandTestFixture fixture;
     private ClearSlashCmd command;
 
     @BeforeEach
     void setUp()
     {
-        command = new ClearSlashCmd(SlashCommandTestFixture.create().getBot());
+        fixture = SlashCommandTestFixture.create();
+        command = new ClearSlashCmd(fixture.getBot());
     }
 
     @Test
-    @DisplayName("builds a clear command with an optional amount")
-    void buildsCommandData()
+    @DisplayName("is a DJ command with no options")
+    void isDjQueueCommand()
     {
-        SlashCommandData data = (SlashCommandData) command.buildCommandData();
-        OptionData amount = data.getOptions().get(0);
-
         assertEquals("clear", command.getName());
-        assertEquals(1, data.getOptions().size());
-        assertEquals("amount", amount.getName());
-        assertEquals(OptionType.INTEGER, amount.getType());
-        assertFalse(amount.isRequired());
-        assertEquals(1L, amount.getMinValue().longValue());
-        assertEquals(1000L, amount.getMaxValue().longValue());
-        assertTrue(command.getHelp().contains("current channel"));
+        assertEquals("DJ", command.getCategory().getName());
+        assertTrue(command.getHelp().contains("song queue"));
+        assertTrue(command.getOptions().isEmpty());
+    }
+
+    @Test
+    @DisplayName("delegates queue clearing to MusicService")
+    void delegatesToMusicService()
+    {
+        command.doDJCommand(fixture.getEvent());
+
+        verify(fixture.getMusicService()).clearQueue(
+                any(),
+                any(),
+                any(OutputAdapter.class)
+        );
     }
 }

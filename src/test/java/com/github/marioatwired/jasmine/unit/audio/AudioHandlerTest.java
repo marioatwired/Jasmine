@@ -222,6 +222,20 @@ public class AudioHandlerTest extends TestBase {
         }
 
         @Test
+        @DisplayName("clearQueue() clears pending tracks without stopping playback")
+        public void testClearQueueOnly() {
+            QueuedTrack first = mock(QueuedTrack.class);
+            QueuedTrack second = mock(QueuedTrack.class);
+            audioHandler.restoreTracks(java.util.List.of(first, second));
+
+            int removed = audioHandler.clearQueue();
+
+            assertEquals(2, removed);
+            assertTrue(audioHandler.getQueue().isEmpty());
+            verify(audioPlayer, never()).stopTrack();
+        }
+
+        @Test
         @DisplayName("stopAndClearQueuePreserveHistory() leaves history unchanged when nothing is playing")
         public void testStopAndClearQueuePreserveHistoryNoCurrentTrack() {
             when(audioPlayer.getPlayingTrack()).thenReturn(null);

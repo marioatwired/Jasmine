@@ -93,6 +93,38 @@ class QueueServiceTest
     }
 
     @Test
+    void clearQueueRemovesPendingTracksForDj()
+    {
+        fixture.withDJPermission();
+        when(fixture.getAudioHandler().clearQueue()).thenReturn(3);
+
+        queueService.clearQueue(fixture.getGuild(), fixture.getMember(), output);
+
+        verify(fixture.getAudioHandler()).clearQueue();
+        verify(output).replySuccess(contains("3 tracks"));
+    }
+
+    @Test
+    void clearQueueWarnsWhenAlreadyEmpty()
+    {
+        fixture.withDJPermission();
+        when(fixture.getAudioHandler().clearQueue()).thenReturn(0);
+
+        queueService.clearQueue(fixture.getGuild(), fixture.getMember(), output);
+
+        verify(output).replyWarning("The queue is already empty!");
+    }
+
+    @Test
+    void clearQueueRequiresDjPermission()
+    {
+        queueService.clearQueue(fixture.getGuild(), fixture.getMember(), output);
+
+        verify(fixture.getAudioHandler(), never()).clearQueue();
+        verify(output).replyError(contains("DJ"));
+    }
+
+    @Test
     void playNextAtFirstPositionOnlyWarns()
     {
         queueService.playNext(fixture.getGuild(), fixture.getMember(), 1, output);

@@ -153,6 +153,30 @@ public class QueueService
         return count;
     }
 
+    public void clearQueue(Guild guild, Member member, OutputAdapter output)
+    {
+        if (!requireDJPermission(guild, member, output, "clear the queue"))
+        {
+            return;
+        }
+
+        AudioHandler handler = getHandler(guild);
+        if (handler == null)
+        {
+            output.replyError("There is no player in this server!");
+            return;
+        }
+
+        int count = handler.clearQueue();
+        if (count == 0)
+        {
+            output.replyWarning("The queue is already empty!");
+            return;
+        }
+
+        output.replySuccess("Cleared " + count + " track" + (count == 1 ? "" : "s") + " from the queue.");
+    }
+
     public boolean isQueueEmpty(Guild guild)
     {
         AudioHandler handler = getHandler(guild);

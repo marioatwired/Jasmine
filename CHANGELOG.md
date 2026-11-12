@@ -5,13 +5,19 @@ All notable changes to Jasmine are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `/clear` and `!clear` now clear the song queue without interrupting the
+  current track. Channel cleanup remains available through `clearchannel`.
+
 ## [0.11.2] - 2026-11-12
 
 ### Added
 
-- Added `/clear` and `!clear` to delete messages in the current channel, with
-  the existing clear-channel count and age limits. `clearchannel` remains
-  available for clearing the channel configured with `settc`.
+- Added `/clear` and `!clear`. This release initially pointed them at channel
+  cleanup; the queue-clearing behavior is corrected in the next patch.
 
 ## [0.11.1] - 2026-11-11
 
