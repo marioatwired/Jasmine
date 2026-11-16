@@ -3,7 +3,7 @@
 # Multi-stage build for Jasmine.
 # Base images are pinned to immutable digests. Dependabot updates them.
 # Stage 1: Build the application
-FROM maven:3.9.12-eclipse-temurin-25-alpine@sha256:91fbbf32cc5076b6142ed98405f3a1a21e102d876eafa5eaf359b5591e8e3fd8 AS builder
+FROM maven:3.9-eclipse-temurin-26-alpine@sha256:4c85d516dd8c7e50d49a403d604e565e0dbb09a790186fe3245725d313ae7cb9 AS builder
 
 ARG BUILD_TIMESTAMP
 ENV BUILD_TIMESTAMP=$BUILD_TIMESTAMP
@@ -32,7 +32,7 @@ RUN --mount=type=cache,target=/root/.m2/repository \
 
 # Stage 2: Create custom minimal JRE using jlink
 # Using noble (Ubuntu 24.04) for glibc 2.39 compatibility with native libraries
-FROM eclipse-temurin:25-jdk-noble@sha256:95e350ad1eb738f943e141640f7e3d797e483359a3b33c3864255bfd1ad71f8a AS jre-builder
+FROM eclipse-temurin:25-jdk-noble@sha256:80f67fb3d6f76e2d817d98a4cc2a9cf05f054d4e6adc5e2144bde671d722e63f AS jre-builder
 
 # Create a minimal JRE with only the modules Jasmine needs
 # Modules determined by: jdeps --print-module-deps --ignore-missing-deps <jar>
