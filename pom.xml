@@ -584,7 +584,7 @@
         <udpqueue.version>0.2.12</udpqueue.version>
         <lavaplayer.version>2.2.7</lavaplayer.version>
         <youtube-source.version>1.18.2</youtube-source.version>
-        <logback.version>1.6.6</logback.version>
+        <logback.version>1.6.8</logback.version>
         <typesafe-config.version>1.4.10</typesafe-config.version>
         <jsoup.version>1.24.1</jsoup.version>
         <mockito.version>5.24.0</mockito.version>
